@@ -60,6 +60,10 @@ def train(gpu, args):
             if global_step % args.ckpt_cycle == 0:
                 model.save_checkpoint(global_step)
 
+            if global_step % args.scheduler_cycle == 0:
+                model.lr_scheduler_D.step()
+                model.lr_scheduler_G.step()
+
         global_step += 1
 
 

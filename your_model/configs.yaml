@@ -22,6 +22,7 @@ beta1: 0
 beta2: 0.999
 
 # Scheduler options
+scheduler_cycle : 1000
 decay_start_step : 1000
 
 # weight of loss
