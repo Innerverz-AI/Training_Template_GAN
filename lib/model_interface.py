@@ -96,10 +96,10 @@ class ModelInterface(metaclass=abc.ABCMeta):
         update learning rate every "scheduler_cycle"
         it will works after "decay_start_step"
         """
-        self.lr_scheduler_G = torch.optim.lr_scheduler.LamdaLR(
+        self.lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
             self.opt_G, lr_lambda=utils.LambdaLR(self.args.max_step, step, self.args.decay_start_step).step
         )
-        self.lr_scheduler_D = torch.optim.lr_scheduler.LamdaLR(
+        self.lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(
             self.opt_D, lr_lambda=utils.LambdaLR(self.args.max_step, step, self.args.decay_start_step).step
         )
 
