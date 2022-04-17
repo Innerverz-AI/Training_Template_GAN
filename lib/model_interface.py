@@ -83,11 +83,26 @@ class ModelInterface(metaclass=abc.ABCMeta):
         """
         step = checkpoint.load_checkpoint(self.args.isMaster, self.args.G_ckpt_path, self.G, self.opt_G)
         step = checkpoint.load_checkpoint(self.args.isMaster, self.args.D_ckpt_path, self.D, self.opt_D)
+        self.step = step
         return step
 
     def set_optimizers(self):
         self.opt_G = torch.optim.Adam(self.G.parameters(), lr=self.args.lr_G, betas=(self.args.beta1, self.args.beta2))
         self.opt_D = torch.optim.Adam(self.D.parameters(), lr=self.args.lr_D, betas=(self.args.beta1, self.args.beta2))
+
+    def seg_scheduler(self):
+        """
+        referenced in...
+        https://github.com/eriklindernoren/PyTorch-GAN/blob/36d3c77e5ff20ebe0aeefd322326a134a279b93e/implementations/cyclegan/cyclegan.py
+        update learning rate every 1000 cycles
+        it will works after "decay_start_step"
+        """
+        self.lr_scheduler_G = torch.optim.lr_scheduler.LamdaLR(
+            self.opt_G, lr_lambda=utils.LambdaLR(self.args.max_step, self.step, self.args.decay_start_step).step
+        )
+        self.lr_scheduler_D = torch.optim.lr_scheduler.LamdaLR(
+            self.opt_D, lr_lambda=utils.LambdaLR(self.args.max_step, self.step, self.args.decay_start_step).step
+        )
 
     @abc.abstractmethod
     def set_loss_collector(self):
