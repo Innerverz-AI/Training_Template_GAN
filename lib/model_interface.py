@@ -90,7 +90,7 @@ class ModelInterface(metaclass=abc.ABCMeta):
         self.opt_G = torch.optim.Adam(self.G.parameters(), lr=self.args.lr_G, betas=(self.args.beta1, self.args.beta2))
         self.opt_D = torch.optim.Adam(self.D.parameters(), lr=self.args.lr_D, betas=(self.args.beta1, self.args.beta2))
 
-    def seg_scheduler(self):
+    def set_scheduler(self):
         """
         referenced in...
         https://github.com/eriklindernoren/PyTorch-GAN/blob/36d3c77e5ff20ebe0aeefd322326a134a279b93e/implementations/cyclegan/cyclegan.py
