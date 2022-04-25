@@ -16,7 +16,9 @@ def CreateModel(gpu, args):
     model.set_validation()
     model.set_optimizers()
     step = model.load_checkpoint()
-    model.set_schedulers(step)
+    
+    if args.scheduler_type != 'None' :
+        model.set_schedulers(step)
     model.set_loss_collector()
 
     if args.isMaster:

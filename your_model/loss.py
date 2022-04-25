@@ -35,7 +35,6 @@ class YourModelLoss(LossInterface):
             L_G += self.args.W_cycle * L_cycle
             self.loss_dict["L_cycle"] = round(L_cycle.item(), 4)
 
-
         self.loss_dict["L_G"] = round(L_G.item(), 4)
         return L_G
 

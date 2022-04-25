@@ -60,9 +60,12 @@ def train(gpu, args):
             if global_step % args.ckpt_cycle == 0:
                 model.save_checkpoint(global_step)
 
-            if global_step % args.scheduler_cycle == 0:
+            if args.scheduler_type != 'None' and global_step % args.scheduler_step == 0:
                 model.lr_scheduler_D.step()
                 model.lr_scheduler_G.step()
+                # if you want to check lr, use under lines
+                # print(model.opt_D.param_groups[0]['lr'])
+                # print(model.opt_G.param_groups[0]['lr'])
 
         global_step += 1
 

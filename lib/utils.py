@@ -73,12 +73,25 @@ def requires_grad(model, flag=True):
     for p in model.parameters():
         p.requires_grad = flag
 
-class LambdaLR:
-    def __init__(self, n_epochs, offset, decay_start_epoch):
-        assert (n_epochs - decay_start_epoch) > 0, "Decay must start before the training session ends!"
-        self.n_epochs = n_epochs
-        self.offset = offset
-        self.decay_start_epoch = decay_start_epoch
+def select_scheduler(optimizer,args,steps):
+    if args.scheduler_type == "LambdaLR":
+        scheduler = torch.optim.lr_scheduler.LambdaLR(
+            optimizer,
+            lr_lambda=lambda steps: 0.95 ** steps,
+            last_epoch=-1,
+            verbose=False
+        )
 
-    def step(self, epoch):
-        return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch) / (self.n_epochs - self.decay_start_epoch)
+    elif args.scheduler_type == "MultiplicativeLR":
+        scheduler = torch.optim.lr_scheduler.MultiplicativeLR(
+            optimizer=optimizer,
+            lr_lambda=lambda epoch: 0.95 ** epoch
+        )
+
+    elif args.scheduler_type == "StepLR":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer,
+            step_size=10,
+            gamma=0.5)
+
+    return scheduler

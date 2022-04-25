@@ -89,19 +89,17 @@ class ModelInterface(metaclass=abc.ABCMeta):
         self.opt_G = torch.optim.Adam(self.G.parameters(), lr=self.args.lr_G, betas=(self.args.beta1, self.args.beta2))
         self.opt_D = torch.optim.Adam(self.D.parameters(), lr=self.args.lr_D, betas=(self.args.beta1, self.args.beta2))
 
-    def set_schedulers(self,step):
+    def set_schedulers(self,steps):
         """
-        referenced in...
-        https://github.com/eriklindernoren/PyTorch-GAN/blob/36d3c77e5ff20ebe0aeefd322326a134a279b93e/implementations/cyclegan/cyclegan.py
+        https://wikidocs.net/157282
+        
+        select your schedulers "LambdaLR/MultiplicativeLR/
+        
         update learning rate every "scheduler_cycle"
         it will works after "decay_start_step"
         """
-        self.lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(
-            self.opt_G, lr_lambda=utils.LambdaLR(self.args.max_step, step, self.args.decay_start_step).step
-        )
-        self.lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(
-            self.opt_D, lr_lambda=utils.LambdaLR(self.args.max_step, step, self.args.decay_start_step).step
-        )
+        self.lr_scheduler_G = utils.select_scheduler(self.opt_G,self.args,steps)
+        self.lr_scheduler_D = utils.select_scheduler(self.opt_D,self.args,steps)
 
     @abc.abstractmethod
     def set_loss_collector(self):
