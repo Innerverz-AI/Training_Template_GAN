@@ -109,7 +109,15 @@ Use this space to show useful examples of how a project can be used. Additional 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#top">back to top</a>)</p>
+### Train
+```python
 
+git clone https://github.com/Innerverz-AI/CodeTemplate.git
+cd CodeTemplate 
+python scripts/train.py {run_id}
+
+# ex) python scripts/train.py first_try
+```
 
 
 <!-- TDL -->
