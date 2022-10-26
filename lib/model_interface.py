@@ -1,10 +1,10 @@
 import abc
 import torch
 from torch.utils.data import DataLoader
-from lib.dataset import PairedFaceDatasetTrain, PairedFaceDatasetValid
+from lib.dataset import SingleFaceDatasetTrain, SingleFaceDatasetValid
 from lib import utils, checkpoint
 import numpy as np
-from packages import Ranger
+# from packages import Ranger
 
 class ModelInterface(metaclass=abc.ABCMeta):
     """
@@ -19,8 +19,10 @@ class ModelInterface(metaclass=abc.ABCMeta):
         When overrided, super call is required.
         """
         self.args = args
+        self.args.gpu = gpu
         self.gpu = gpu
         self.dict = {}
+        self.valid_dict = {}
         self.SetupModel()
 
     def SetupModel(self):
@@ -49,20 +51,20 @@ class ModelInterface(metaclass=abc.ABCMeta):
         if source and target are identical.
         """
         try:
-            I_source, I_target, same_person = next(self.train_iterator)
+            Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip = next(self.train_iterator)
         except StopIteration:
             self.train_iterator = iter(self.train_dataloader)
-            I_source, I_target, same_person = next(self.train_iterator)
-        I_source, I_target, same_person = I_source.to(self.gpu), I_target.to(self.gpu), same_person.to(self.gpu)
-        return I_source, I_target, same_person
+            Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip  = next(self.train_iterator)
+        Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip  = Xs.to(self.gpu), Xt.to(self.gpu), Xt_noflip.to(self.gpu), Xs_one_hot.to(self.gpu), Xt_one_hot.to(self.gpu), Xt_one_hot_noflip.to(self.gpu)
+        return Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip
 
     def set_dataset(self):
         """
         Initialize dataset using the dataset paths specified in the command line arguments.
         """
-        self.train_dataset = PairedFaceDatasetTrain(self.args.train_dataset_root_list, self.args.isMaster, same_prob=self.args.same_prob)
+        self.train_dataset = SingleFaceDatasetTrain(self.args.train_dataset_root_list, self.args.isMaster)
         if self.args.valid_dataset_root:
-            self.valid_dataset = PairedFaceDatasetValid(self.args.valid_dataset_root, self.args.isMaster)
+            self.valid_dataset = SingleFaceDatasetValid(self.args.valid_dataset_root, self.args.isMaster)
 
     def set_data_iterator(self):
         """
@@ -80,9 +82,9 @@ class ModelInterface(metaclass=abc.ABCMeta):
         These images are anchored for checking the improvement of the model.
         """
         if self.args.use_validation:
-            self.valid_dataloader = DataLoader(self.valid_dataset, batch_size=self.args.batch_per_gpu, num_workers=8, drop_last=True)
-            I_source, I_target = next(iter(self.valid_dataloader))
-            self.valid_source, self.valid_target = I_source.to(self.gpu), I_target.to(self.gpu)
+            sampler = torch.utils.data.distributed.DistributedSampler(self.valid_dataset) if self.args.use_mGPU else None
+            self.valid_dataloader = DataLoader(self.valid_dataset, batch_size=self.args.val_batch_per_gpu, pin_memory=True, sampler=sampler, drop_last=True)
+            self.valid_iterator = iter(self.valid_dataloader)
 
     @abc.abstractmethod
     def set_networks(self):

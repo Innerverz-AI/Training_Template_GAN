@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from packages import ArcFace, FaceParser
 
 class InstanceNorm(nn.Module):
     def __init__(self, epsilon=1e-8):
@@ -176,3 +175,225 @@ class MyGenerator(nn.Module):
 
         # return x, bot, features, dlatents
         return x, id_source
+
+## PSP
+import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from collections import namedtuple
+
+
+class Bottleneck(namedtuple('Block', ['in_channel', 'depth', 'stride'])):
+    """ A named tuple describing a ResNet block. """
+
+def get_block(in_channel, depth, num_units, stride=2):
+    return [Bottleneck(in_channel, depth, stride)] + [Bottleneck(depth, depth, 1) for i in range(num_units - 1)]
+
+
+def get_blocks(num_layers):
+    if num_layers == 50:
+        blocks = [
+            get_block(in_channel=64, depth=64, num_units=3),
+            get_block(in_channel=64, depth=128, num_units=4),
+            get_block(in_channel=128, depth=256, num_units=14),
+            get_block(in_channel=256, depth=512, num_units=3)
+        ]
+    elif num_layers == 100:
+        blocks = [
+            get_block(in_channel=64, depth=64, num_units=3),
+            get_block(in_channel=64, depth=128, num_units=13),
+            get_block(in_channel=128, depth=256, num_units=30),
+            get_block(in_channel=256, depth=512, num_units=3)
+        ]
+    elif num_layers == 152:
+        blocks = [
+            get_block(in_channel=64, depth=64, num_units=3),
+            get_block(in_channel=64, depth=128, num_units=8),
+            get_block(in_channel=128, depth=256, num_units=36),
+            get_block(in_channel=256, depth=512, num_units=3)
+        ]
+    else:
+        raise ValueError("Invalid number of layers: {}. Must be one of [50, 100, 152]".format(num_layers))
+    return blocks
+
+
+class SEModule(nn.Module):
+    def __init__(self, channels, reduction):
+        super(SEModule, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc1 = nn.Conv2d(channels, channels // reduction, kernel_size=1, padding=0, bias=False)
+        self.relu = nn.ReLU(inplace=True)
+        self.fc2 = nn.Conv2d(channels // reduction, channels, kernel_size=1, padding=0, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        module_input = x
+        x = self.avg_pool(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        x = self.sigmoid(x)
+        return module_input * x
+
+class bottleneck_IR_SE(nn.Module):
+    def __init__(self, in_channel, depth, stride):
+        super(bottleneck_IR_SE, self).__init__()
+        if in_channel == depth:
+            self.shortcut_layer = nn.MaxPool2d(1, stride)
+        else:
+            self.shortcut_layer = nn.Sequential(
+                nn.Conv2d(in_channel, depth, (1, 1), stride, bias=False),
+                nn.BatchNorm2d(depth)
+            )
+        self.res_layer = nn.Sequential(
+            nn.BatchNorm2d(in_channel),
+            nn.Conv2d(in_channel, depth, (3, 3), (1, 1), 1, bias=False),
+            nn.PReLU(depth),
+            nn.Conv2d(depth, depth, (3, 3), stride, 1, bias=False),
+            nn.BatchNorm2d(depth),
+            SEModule(depth, 16)
+        )
+
+    def forward(self, x):
+        shortcut = self.shortcut_layer(x)
+        res = self.res_layer(x)
+        return res + shortcut
+
+
+class GradualStyleBlock(nn.Module):
+    def __init__(self, in_c, out_c, spatial):
+        super(GradualStyleBlock, self).__init__()
+        self.out_c = out_c
+        self.spatial = spatial
+        num_pools = int(math.log2(spatial))
+        modules = []
+        modules += [
+            nn.Conv2d(in_c, out_c, kernel_size=3, stride=2, padding=1),
+            nn.LeakyReLU()
+            ]
+        for i in range(num_pools - 1):
+            modules += [
+                nn.Conv2d(out_c, out_c, kernel_size=3, stride=2, padding=1),
+                nn.LeakyReLU()
+                ]
+        self.convs = nn.Sequential(*modules)
+        self.linear = nn.Linear(out_c, out_c)
+
+    def forward(self, x):
+        x = self.convs(x)
+        x = x.view(-1, self.out_c)
+        x = self.linear(x)
+        return x
+
+class GradualStyleEncoder(nn.Module):
+    def __init__(self, in_dim=3, out_dim=64):
+        super(GradualStyleEncoder, self).__init__()
+        blocks = get_blocks(50)
+        self.input_layer = nn.Sequential(
+            nn.Conv2d(in_dim, 64, 3, 1, 1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.PReLU(64)
+            )
+        modules = []
+        for block in blocks:
+            for bottleneck in block:
+                modules.append(
+                    bottleneck_IR_SE(
+                    bottleneck.in_channel,
+                    bottleneck.depth,
+                    bottleneck.stride
+                    ))
+        self.body = nn.Sequential(*modules)
+
+        self.latlayer1 = nn.Conv2d(512, 256, kernel_size=1, stride=1, padding=0)
+        self.latlayer2 = nn.Conv2d(256, 128, kernel_size=1, stride=1, padding=0)
+        self.latlayer3 = nn.Conv2d(128, 64, kernel_size=1, stride=1, padding=0)
+        self.latlayer4 = nn.Conv2d(64, 64, kernel_size=1, stride=1, padding=0)
+
+        self.output_layer = nn.Conv2d(64, out_dim, 1, 1, 0, bias=False)
+
+    def _upsample_add(self, x, y):
+        _, _, H, W = y.size()
+        return F.interpolate(x, size=(H, W), mode='bilinear', align_corners=True) + y
+
+    def forward(self, x): # b, 3, 256, 256
+        x = self.input_layer(x) # b 64 256 256
+
+        modulelist = list(self.body._modules.values())
+        c0 = x
+        for i, l in enumerate(modulelist):
+            x = l(x)
+            if i == 0:
+                c1 = x
+            elif i == 6:
+                c2 = x
+                
+            elif i == 20:
+                c3 = x
+            elif i == 23:
+                c4 = x
+        
+        p3 = self._upsample_add(self.latlayer1(c4), c3) # 256 32 32
+        p2 = self._upsample_add(self.latlayer2(p3), c2) # 128 64 64
+        p1 = self._upsample_add(self.latlayer3(p2), c1) # 64 128 128
+        p0 = self._upsample_add(self.latlayer4(p1), c0) # 64 256 256
+        out= self.output_layer(p0)
+
+        return out # b 64 256 256
+
+
+class Generator(nn.Module):
+    def __init__(self):
+        super(Generator, self).__init__()
+        self.color_transfer_net = GradualStyleEncoder(3, 64)
+        self.blender_net = GradualStyleEncoder(6, 3)
+
+    def get_color_reference(self, gray_image, rgb_image, gray_label, rgb_label):
+        # 256 
+        gray_feature_map = self.color_transfer_net(gray_image)
+        rgb_feature_map = self.color_transfer_net(rgb_image)
+
+        # animated image with target color
+        color_reference = self.do_RC(gray_feature_map, rgb_feature_map, rgb_image, gray_label, rgb_label)
+
+        return color_reference 
+
+
+    def get_blend_image(self, gray_image, color_reference):
+        cat_data = torch.cat((color_reference,gray_image), dim=1)
+        _cat_data = F.interpolate(cat_data,(256,256))
+        blend_image = self.blender_net(_cat_data)
+
+        return blend_image
+
+    def do_RC(self, gray_feature_map, rgb_feature_map, rgb_image, gray_one_hot, rgb_one_hot):
+        _, n_ch, _, _ = gray_one_hot.shape
+        canvas = torch.zeros_like(rgb_image)
+        b, c, h, w = gray_feature_map.size()
+        for b_idx in range(b):
+            for c_idx in range(1, n_ch):
+                gray_mask, rgb_mask = gray_one_hot[b_idx,c_idx], rgb_one_hot[b_idx,c_idx]
+                if gray_mask.sum() == 0:
+                    continue
+
+                gray_matrix = torch.masked_select(gray_feature_map[b_idx], gray_mask.bool()).reshape(c, -1) # 64, pixel_num_A
+                gray_matrix_bar = gray_matrix - gray_matrix.mean(0, keepdim=True) # 64, pixel_num_A
+                gray_matrix_norm = torch.norm(gray_matrix_bar, dim=0, keepdim=True)
+                gray_matrix_ = gray_matrix_bar / gray_matrix_norm
+
+                rgb_matrix = torch.masked_select(rgb_feature_map[b_idx], rgb_mask.bool()).reshape(c, -1) # 64, pixel_num_B
+                rgb_matrix_bar = rgb_matrix - rgb_matrix.mean(0, keepdim=True) # 64, pixel_num_B
+                rgb_matrix_norm = torch.norm(rgb_matrix_bar, dim=0, keepdim=True)
+                rgb_matrix_ = rgb_matrix_bar / rgb_matrix_norm
+               
+                rgb_pixels = torch.masked_select(rgb_image[b_idx], rgb_mask.bool()).reshape(3,-1)
+               
+                correlation_matrix = torch.matmul(gray_matrix_.transpose(0,1), rgb_matrix_)
+                correlation_matrix = F.softmax(correlation_matrix,dim=1)
+                
+                colorized_matrix = torch.matmul(correlation_matrix, rgb_pixels.transpose(0,1)).transpose(0,1)
+
+                canvas[b_idx].masked_scatter_(gray_mask.bool(), colorized_matrix) # 3 128 128
+
+        return canvas

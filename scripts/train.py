@@ -39,9 +39,9 @@ def train(gpu, args):
             if global_step % args.test_cycle == 0:
                 save_image(model.args, global_step, "train_imgs", model.train_images)
 
-                if args.use_validation:
-                    model.do_validation(global_step) 
-                    save_image(model.args, global_step, "valid_imgs", model.valid_images)
+            if args.use_validation and global_step % args.valid_cycle == 0:
+                model.do_validation(global_step) 
+                save_image(model.args, global_step, "valid_imgs", model.valid_images)
 
             # Save checkpoint parameters 
             if global_step % args.ckpt_cycle == 0:

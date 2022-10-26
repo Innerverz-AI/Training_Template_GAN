@@ -1,5 +1,5 @@
 import abc
-from packages.lpips.lpips import LPIPS
+# from packages.lpips.lpips import LPIPS
 import torch
 import torch.nn.functional as F
 import time
@@ -20,6 +20,7 @@ class LossInterface(metaclass=abc.ABCMeta):
         self.start_time = time.time()
         self.loss_dict = {}
 
+
     def print_loss(self, global_step):
         """
         Print discriminator and generator loss and formatted elapsed time.
@@ -29,6 +30,17 @@ class LossInterface(metaclass=abc.ABCMeta):
         print(f"[ {seconds//3600//24:02}d {(seconds//3600)%24:02}h {(seconds//60)%60:02}m {seconds%60:02}s ]")
         print(f'steps: {global_step:06} / {self.args.max_step}')
         print(f'lossD: {self.loss_dict["L_D"]} | lossG: {self.loss_dict["L_G"]}')
+    
+    def val_print_loss(self, global_step):
+        """
+        Print discriminator and generator loss and formatted elapsed time.
+        """
+        seconds = int(time.time() - self.start_time)
+        print("")
+        print(f"[ {seconds//3600//24:02}d {(seconds//3600)%24:02}h {(seconds//60)%60:02}m {seconds%60:02}s ]")
+        print(f'steps: {global_step:06} / {self.args.max_step}')
+        print(f'val_lossD: {self.loss_dict["valid_L_D"]} | val_lossG: {self.loss_dict["valid_L_G"]}')
+
 
     @abc.abstractmethod
     def get_loss_G(self):

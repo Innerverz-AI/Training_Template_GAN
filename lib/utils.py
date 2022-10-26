@@ -36,15 +36,16 @@ def weight_init(m):
     if isinstance(m, nn.ConvTranspose2d):
         nn.init.xavier_normal_(m.weight.data)
 
-def update_net(model, optimizer, loss):
+def update_net(args, model, optimizer, loss):
     optimizer.zero_grad()  
     loss.backward()   
-    size = float(torch.distributed.get_world_size())
-    for param in model.parameters():
-        if param.grad == None:
-            continue            
-        torch.distributed.all_reduce(param.grad.data, op=torch.distributed.ReduceOp.SUM)
-        param.grad.data /= size
+    if args.use_mGPU:
+        size = float(torch.distributed.get_world_size())
+        for param in model.parameters():
+            if param.grad == None:
+                continue            
+            torch.distributed.all_reduce(param.grad.data, op=torch.distributed.ReduceOp.SUM)
+            param.grad.data /= size
     optimizer.step()  
 
 # def update_net(optimizer, loss):

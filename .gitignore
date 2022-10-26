@@ -3,10 +3,11 @@ wandb/
 *.zip
 
 # to remain gitkeep
-!packages/
+# !packages/
+packages
 packages/*
-!packages/.gitkeep
-!packages/__init__.py
+# !packages/.gitkeep
+# !packages/__init__.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
