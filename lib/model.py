@@ -1,8 +1,8 @@
 import abc
 import torch
 from torch.utils.data import DataLoader
-from lib.dataset import SingleFaceDatasetTrain, SingleFaceDatasetValid
-from lib import utils, checkpoint
+from MyModel.dataset import MyDataset
+from lib import utils
 import numpy as np
 # from packages import Ranger
 
@@ -14,27 +14,26 @@ class ModelInterface(metaclass=abc.ABCMeta):
     instantiated but abstract methods were not implemented. 
     """
 
-    def __init__(self, args, gpu):
+    def __init__(self, CONFIG):
         """
         When overrided, super call is required.
         """
-        self.args = args
-        self.args.gpu = gpu
-        self.gpu = gpu
-        self.dict = {}
+        self.CONFIG = CONFIG
+        self.train_dict = {}
         self.valid_dict = {}
         self.SetupModel()
 
     def SetupModel(self):
-        self.args.isMaster = self.gpu == 0
+        
+        self.CONFIG['BASE']['IS_MASTER'] = self.CONFIG['BASE']['GPU_ID'] == 0
         self.RandomGenerator = np.random.RandomState(42)
         self.set_networks()
         self.set_optimizers()
 
-        if self.args.use_mGPU:
+        if self.CONFIG['BASE']['USE_MULTI_GPU']:
             self.set_multi_GPU()
 
-        if self.args.load_ckpt:
+        if self.CONFIG['CKPT']['TURN_ON']:
             self.load_checkpoint()
 
         self.set_dataset()
@@ -42,8 +41,8 @@ class ModelInterface(metaclass=abc.ABCMeta):
         self.set_validation()
         self.set_loss_collector()
 
-        if self.args.isMaster:
-            print(f'Model {self.args.model_id} has successively created')
+        if self.CONFIG['BASE']['IS_MASTER']:
+            print(f"Model {self.CONFIG['BASE']['MODEL_ID']} has successively created")
 
     def load_next_batch(self):
         """
@@ -51,20 +50,23 @@ class ModelInterface(metaclass=abc.ABCMeta):
         if source and target are identical.
         """
         try:
-            Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip = next(self.train_iterator)
+            batch_data = next(self.train_iterator)
+            batch_data = [data.cuda() for data in batch_data]
+
         except StopIteration:
             self.train_iterator = iter(self.train_dataloader)
-            Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip  = next(self.train_iterator)
-        Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip  = Xs.to(self.gpu), Xt.to(self.gpu), Xt_noflip.to(self.gpu), Xs_one_hot.to(self.gpu), Xt_one_hot.to(self.gpu), Xt_one_hot_noflip.to(self.gpu)
-        return Xs, Xt, Xt_noflip, Xs_one_hot, Xt_one_hot, Xt_one_hot_noflip
+            batch_data = next(self.train_iterator)
+            batch_data = [data.cuda() for data in batch_data]
+
+        return batch_data
 
     def set_dataset(self):
         """
         Initialize dataset using the dataset paths specified in the command line arguments.
         """
-        self.train_dataset = SingleFaceDatasetTrain(self.args.train_dataset_root_list, self.args.isMaster)
-        if self.args.valid_dataset_root:
-            self.valid_dataset = SingleFaceDatasetValid(self.args.valid_dataset_root, self.args.isMaster)
+        self.train_dataset = MyDataset(self.CONFIG)
+        if self.CONFIG['BASE']['DO_VALID']:
+            self.valid_dataset = MyDataset(self.CONFIG)
 
     def set_data_iterator(self):
         """
@@ -72,8 +74,8 @@ class ModelInterface(metaclass=abc.ABCMeta):
         Using self.dataset and sampler, construct dataloader.
         Store Iterator from dataloader as a member variable.
         """
-        sampler = torch.utils.data.distributed.DistributedSampler(self.train_dataset) if self.args.use_mGPU else None
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.args.batch_per_gpu, pin_memory=True, sampler=sampler, num_workers=8, drop_last=True)
+        sampler = torch.utils.data.distributed.DistributedSampler(self.train_dataset) if self.CONFIG['BASE']['USE_MULTI_GPU'] else None
+        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.CONFIG['BASE']['BATCH_PER_GPU'], pin_memory=True, sampler=sampler, num_workers=8, drop_last=True)
         self.train_iterator = iter(self.train_dataloader)
 
     def set_validation(self):
@@ -81,9 +83,9 @@ class ModelInterface(metaclass=abc.ABCMeta):
         Predefine test images only if args.valid_dataset_root is specified.
         These images are anchored for checking the improvement of the model.
         """
-        if self.args.use_validation:
-            sampler = torch.utils.data.distributed.DistributedSampler(self.valid_dataset) if self.args.use_mGPU else None
-            self.valid_dataloader = DataLoader(self.valid_dataset, batch_size=self.args.val_batch_per_gpu, pin_memory=True, sampler=sampler, drop_last=True)
+        if self.CONFIG['BASE']['DO_VALID'] :
+            sampler = torch.utils.data.distributed.DistributedSampler(self.valid_dataset) if self.CONFIG['BASE']['USE_MULTI_GPU'] else None
+            self.valid_dataloader = DataLoader(self.valid_dataset, batch_size=self.CONFIG['BASE']['BATCH_PER_GPU'], pin_memory=True, sampler=sampler, drop_last=True)
             self.valid_iterator = iter(self.valid_dataloader)
 
     @abc.abstractmethod
@@ -97,43 +99,42 @@ class ModelInterface(metaclass=abc.ABCMeta):
         pass
 
     def set_multi_GPU(self):
-        utils.setup_ddp(self.gpu, self.args.gpu_num)
+        utils.setup_ddp(self.CONFIG['BASE']['GPU_ID'], self.CONFIG['BASE']['GPU_NUM'])
 
         # Data parallelism is required to use multi-GPU
-        self.G = torch.nn.parallel.DistributedDataParallel(self.G, device_ids=[self.gpu], broadcast_buffers=False, find_unused_parameters=True).module
-        self.D = torch.nn.parallel.DistributedDataParallel(self.D, device_ids=[self.gpu]).module
+        self.G = torch.nn.parallel.DistributedDataParallel(self.G, device_ids=[self.CONFIG['BASE']['GPU_ID']], broadcast_buffers=False, find_unused_parameters=True).module
+        self.D = torch.nn.parallel.DistributedDataParallel(self.D, device_ids=[self.CONFIG['BASE']['GPU_ID']]).module
 
-
-    def save_checkpoint(self, global_step):
+    def save_checkpoint(self):
         """
         Save model and optimizer parameters.
         """
-        checkpoint.save_checkpoint(self.args, self.G, self.opt_G, name='G', global_step=global_step)
-        checkpoint.save_checkpoint(self.args, self.D, self.opt_D, name='D', global_step=global_step)
+        utils.save_checkpoint(self.CONFIG, self.G, self.opt_G, type='G')
+        utils.save_checkpoint(self.CONFIG, self.D, self.opt_D, type='D')
         
-        if self.args.isMaster:
-            print(f"\nCheckpoints are succesively saved in {self.args.save_root}/{self.args.run_id}/ckpt/\n")
+        if self.CONFIG['BASE']['IS_MASTER']:
+            print(f"\nCheckpoints are succesively saved in {self.CONFIG['BASE']['SAVE_ROOT']}/{self.CONFIG['BASE']['RUN_ID']}/ckpt/\n")
     
     def load_checkpoint(self):
         """
         Load pretrained parameters from checkpoint to the initialized models.
         """
 
-        self.args.global_step = \
-        checkpoint.load_checkpoint(self.args, self.G, self.opt_G, "G")
-        checkpoint.load_checkpoint(self.args, self.D, self.opt_D, "D")
+        self.CONFIG['BASE']['GLOBAL_STEP'] = \
+        utils.load_checkpoint(self.CONFIG, self.G, self.opt_G, type="G")
+        utils.load_checkpoint(self.CONFIG, self.D, self.opt_D, type="D")
 
-        if self.args.isMaster:
-            print(f"Pretrained parameters are succesively loaded from {self.args.save_root}/{self.args.ckpt_id}/ckpt/")
+        if self.CONFIG['BASE']['IS_MASTER']:
+            print(f"Pretrained parameters are succesively loaded from {CONFIG['BASE']['SAVE_ROOT']}/{CONFIG['CKPT']['ID']}/ckpt/")
 
     def set_optimizers(self):
-        if self.args.optimizer == "Adam":
-            self.opt_G = torch.optim.Adam(self.G.parameters(), lr=self.args.lr_G, betas=self.args.betas)
-            self.opt_D = torch.optim.Adam(self.D.parameters(), lr=self.args.lr_D, betas=self.args.betas)
+        if self.CONFIG['OPTIMIZER']['TYPE'] == "Adam":
+            self.opt_G = torch.optim.Adam(self.G.parameters(), lr=self.CONFIG['OPTIMIZER']['LR_G'], betas=self.CONFIG['OPTIMIZER']['BETA'])
+            self.opt_D = torch.optim.Adam(self.D.parameters(), lr=self.CONFIG['OPTIMIZER']['LR_D'], betas=self.CONFIG['OPTIMIZER']['BETA'])
             
-        if self.args.optimizer == "Ranger":
-            self.opt_G = Ranger(self.G.parameters(), lr=self.args.lr_G, betas=self.args.betas)
-            self.opt_D = Ranger(self.D.parameters(), lr=self.args.lr_D, betas=self.args.betas)
+        if self.CONFIG['OPTIMIZER']['TYPE'] == "Ranger":
+            self.opt_G = Ranger(self.G.parameters(), lr=self.CONFIG['OPTIMIZER']['LR_G'], betas=self.CONFIG['OPTIMIZER']['BETA'])
+            self.opt_D = Ranger(self.D.parameters(), lr=self.CONFIG['OPTIMIZER']['LR_D'], betas=self.CONFIG['OPTIMIZER']['BETA'])
 
     @abc.abstractmethod
     def set_loss_collector(self):

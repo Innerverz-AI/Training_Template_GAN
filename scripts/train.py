@@ -1,73 +1,73 @@
 import os
 import sys
 sys.path.append("./")
-sys.path.append("./packages")
-from lib.utils import save_image
-from lib.config import Config
+sys.path.append('./lib/discriminators/')
+from lib import utils
 from MyModel.model import MyModel
 import torch
 import wandb
+import warnings
+warnings.filterwarnings('ignore')
 
-
-def train(gpu, args): 
+def train(gpu, CONFIG): 
     torch.cuda.set_device(gpu)
 
-    # convert dictionary to class
-    args = Config(args)    
-    model = MyModel(args, gpu)
+    CONFIG['BASE']['GPU_ID'] = gpu
+    CONFIG['BASE']['GLOBAL_STEP'] = 0
+
+    model = MyModel(CONFIG)
 
     # Initialize wandb to gather and display loss on dashboard 
-    if args.isMaster and args.use_wandb:
-        wandb.init(project=args.model_id, name=args.run_id)
+    if CONFIG['BASE']['IS_MASTER'] and CONFIG['WANDB']['TURN_ON']:
+        wandb.init(project=CONFIG['BASE']['MODEL_ID'], name=CONFIG['BASE']['RUN_ID'])
 
     # Training loop
-    global_step = args.global_step if args.load_ckpt else 0
-    while global_step < args.max_step:
+    while CONFIG['BASE']['GLOBAL_STEP'] < CONFIG['BASE']['MAX_STEP']:
 
         # go one step
-        model.go_step(global_step)
+        model.go_step()
 
-        if args.isMaster:
+        if CONFIG['BASE']['IS_MASTER']:
             # Save and print loss
-            if global_step % args.loss_cycle == 0:
-                model.loss_collector.print_loss(global_step)
+            if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['LOSS'] == 0:
+                model.loss_collector.print_loss()
 
-                if args.use_wandb:
+                if CONFIG['WANDB']['TURN_ON']:
                     wandb.log(model.loss_collector.loss_dict)
                 
             # Save image
-            if global_step % args.test_cycle == 0:
-                save_image(model.args, global_step, "train_imgs", model.train_images)
+            if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['TEST'] == 0:
+                utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_train.jpg", model.train_images)
 
-            if args.use_validation and global_step % args.valid_cycle == 0:
-                model.do_validation(global_step) 
-                save_image(model.args, global_step, "valid_imgs", model.valid_images)
+            if CONFIG['BASE']['DO_VALID'] and CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['VALID'] == 0:
+                model.do_validation()
+                utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_valid.jpg", model.valid_images)
 
             # Save checkpoint parameters 
-            if global_step % args.ckpt_cycle == 0:
-                model.save_checkpoint(global_step)
+            if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['CKPT'] == 0:
+                model.save_checkpoint()
 
-        global_step += 1
+        CONFIG['BASE']['GLOBAL_STEP'] += 1
 
 
 if __name__ == "__main__":
 
     # load config
-    config_path = "configs/train_configs.yaml"
-    args = Config.from_yaml(config_path)
-    
+    CONFIG = utils.load_yaml("./configs.yaml")
+
     # update configs
-    args.run_id = sys.argv[1] # command line: python train.py {run_id}
-    args.gpu_num = torch.cuda.device_count()
+    CONFIG['BASE']['RUN_ID'] = sys.argv[1] # command line: python train.py {run_id}
+    CONFIG['BASE']['GPU_NUM'] = torch.cuda.device_count()
     
     # save config
-    os.makedirs(f"{args.save_root}/{args.run_id}", exist_ok=True)
-    args.save_yaml()
+    utils.make_dirs(CONFIG)
+    utils.print_dict(CONFIG)
+    utils.save_yaml(f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}.yaml", CONFIG)
 
     # Set up multi-GPU training
-    if args.use_mGPU:  
-        torch.multiprocessing.spawn(train, nprocs=args.gpu_num, args=(args.__dict__, ))
+    if CONFIG['BASE']['USE_MULTI_GPU']:
+        torch.multiprocessing.spawn(train, nprocs=CONFIG['BASE']['GPU_NUM'], args=(CONFIG, ))
 
     # Set up single GPU training
     else:
-        train(gpu=0, args=args.__dict__)
+        train(0, CONFIG)

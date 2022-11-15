@@ -1,43 +1,6 @@
 import torch
 import torch.nn as nn
 
-
-def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
-    """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=dilation, groups=groups, bias=False, dilation=dilation)
-
-def conv1x1(in_planes, out_planes, stride=1, bias=False):
-    """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=bias)
-
-def set_norm_layer(norm_type, norm_dim):
-    if norm_type == 'bn':
-        norm = nn.BatchNorm2d(norm_dim)
-    elif norm_type == 'in':
-        norm = nn.InstanceNorm2d(norm_dim)
-    elif norm_type == 'none':
-        norm = None
-    else:
-        assert 0, "Unsupported normalization: {}".format(norm)
-    return norm
-
-def set_activate_layer(types):
-    # initialize activation
-    if types == 'relu':
-        activation = nn.ReLU()
-    elif types == 'lrelu':
-        activation = nn.LeakyReLU(0.2)
-    elif types == 'tanh':
-        activation = nn.Tanh()
-    elif types == 'sig':
-        activation = nn.Sigmoid()
-    elif types == 'none':
-        activation = None
-    else:
-        assert 0, f"Unsupported activation: {types}"
-    return activation
-
 class AdaIN(nn.Module):
     def __init__(self, style_dim, num_features):
         super().__init__()
@@ -73,9 +36,10 @@ class Interpolate(nn.Module):
 #------------------------------------------------------------------------------------------
 class ConvBlock(nn.Module):
     def __init__(self, input_dim ,output_dim, kernel_size=3, stride=2, padding=1, \
-        norm_type='bn', activation_type='relu', transpose=False):
+        norm_type='bn', act_type='lrelu', transpose=False):
         super(ConvBlock, self).__init__()
 
+        # convolutional layer and upsampling
         if transpose:
             self.up = Interpolate(scale_factor=stride)
             self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride=1, padding=padding)
@@ -83,8 +47,30 @@ class ConvBlock(nn.Module):
             self.up = transpose
             self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride, padding=padding)
         
-        self.norm = set_norm_layer(norm_type, output_dim) # bn, in, none
-        self.activation = set_activate_layer(activation_type) # relu, lrelu, tanh, sig, none
+        # normalization
+        if norm_type == 'bn':
+            self.norm = nn.BatchNorm2d(output_dim)
+        elif norm_type == 'in':
+            self.norm = nn.InstanceNorm2d(output_dim)
+        elif norm_type == 'none':
+            self.norm = None
+        else:
+            assert 0, f"Unsupported normalization: {norm_type}"
+        
+        # activation
+        if act_type == 'relu':
+            self.act = nn.ReLU()
+        elif act_type == 'lrelu':
+            self.act = nn.LeakyReLU(0.2)
+        elif act_type == 'tanh':
+            self.act = nn.Tanh()
+        elif act_type == 'sig':
+            self.act = nn.Sigmoid()
+        elif act_type == 'none':
+            self.act = None
+        else:
+            assert 0, f"Unsupported activation: {act_type}"
+
 
     def forward(self, x):
         if self.up:
@@ -95,18 +81,18 @@ class ConvBlock(nn.Module):
         if self.norm:
             x = self.norm(x)
 
-        if self.activation:
-            x = self.activation(x)
+        if self.act:
+            x = self.act(x)
         return x
 
 
 class ResBlock(nn.Module):
-    def __init__(self, in_c, out_c, scale_factor=1, norm='in', activation='lrelu'):
+    def __init__(self, in_c, out_c, scale_factor=1, norm='in', act='lrelu'):
         super(ResBlock, self).__init__()
 
-        self.norm1 = set_norm_layer(norm, out_c)
-        self.norm2 = set_norm_layer(norm, out_c)
-        self.activ = set_activate_layer(activation)
+        self.norm1 = nn.InstanceNorm2d(out_c)
+        self.norm2 = nn.InstanceNorm2d(out_c)
+        self.activ = nn.LeakyReLU(0.2)
         self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, bias=False)
@@ -128,12 +114,12 @@ class ResBlock(nn.Module):
 
 
 class AdaINResBlock(nn.Module):
-    def __init__(self, in_c, out_c, scale_factor=1, activation='lrelu', style_dim=512):
+    def __init__(self, in_c, out_c, scale_factor=1, style_dim=512):
         super(AdaINResBlock, self).__init__()
 
         self.AdaIN1 = AdaIN(style_dim, in_c)
         self.AdaIN2 = AdaIN(style_dim, out_c)
-        self.activ = set_activate_layer(activation)
+        self.activ = nn.LeakyReLU(0.2)
         self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, bias=False)

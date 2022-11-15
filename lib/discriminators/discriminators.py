@@ -3,7 +3,6 @@ import numpy as np
 import torch.nn.functional as F
 import math
 
-
 class LatentCodesDiscriminator(nn.Module):
     def __init__(self, style_dim=512, n_mlp=4):
         super().__init__()
@@ -241,4 +240,5 @@ class ResBlk(nn.Module):
     def forward(self, x):
         x = self._shortcut(x) + self._residual(x)
         return x / math.sqrt(2)  # unit variance
-        
+
+
