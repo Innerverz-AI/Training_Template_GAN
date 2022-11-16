@@ -24,8 +24,10 @@ def make_dirs(CONFIG):
 
     CONFIG['BASE']['SAVE_ROOT_CKPT'] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/ckpt"
     CONFIG['BASE']['SAVE_ROOT_IMGS'] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/imgs"
+    CONFIG['BASE']['SAVE_ROOT_CODE'] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/code"
     os.makedirs(CONFIG['BASE']['SAVE_ROOT_CKPT'], exist_ok=True)
     os.makedirs(CONFIG['BASE']['SAVE_ROOT_IMGS'], exist_ok=True)
+    os.makedirs(CONFIG['BASE']['SAVE_ROOT_CODE'], exist_ok=True)
 
 def get_all_images(dataset_root_list):
     image_paths = []

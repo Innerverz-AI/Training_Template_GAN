@@ -55,11 +55,12 @@ class MyModel(ModelInterface):
             ]
 
     def run_G(self, run_dict):
-        run_dict['blend_img'], run_dict['color_map'] = self.G([run_dict['source_color'], run_dict['source_gray'], run_dict['source_mask'], run_dict['target_color'], run_dict['target_gray'], run_dict['target_mask']])
+        # with torch.no_grad():
+        run_dict['blend_img'], run_dict['color_map'] = self.G([run_dict['source_color'], run_dict['source_mask'], run_dict['target_color'], run_dict['target_gray'], run_dict['target_mask']])
         bg_mask = run_dict["target_mask"][:,0].unsqueeze(1)
         run_dict["fake_img"] = run_dict['blend_img'] * (1-bg_mask) + run_dict["target_color"] * bg_mask
 
-        run_dict['cycle_blend_img'], run_dict['cycle_color_map'] = self.G([run_dict['fake_img'], run_dict['target_gray'], run_dict['target_mask'], run_dict['source_color'], run_dict['source_gray'], run_dict['source_mask']])
+        run_dict['cycle_blend_img'], run_dict['cycle_color_map'] = self.G([run_dict['fake_img'], run_dict['target_mask'], run_dict['source_color'], run_dict['source_gray'], run_dict['source_mask']])
         bg_mask = run_dict["source_mask"][:,0].unsqueeze(1)
         run_dict["cycle_fake_img"] = run_dict['cycle_blend_img'] * (1-bg_mask) + run_dict["source_color"] * bg_mask
 

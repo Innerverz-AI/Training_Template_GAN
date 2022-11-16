@@ -17,7 +17,7 @@ class MyModelLoss(LossInterface):
             self.loss_dict["L_g_adv"] = round(L_adv.item(), 4)
 
         if self.CONFIG['LOSS']['W_VGG']:
-            L_vgg = Loss.get_vgg_loss(F.interpolate(run_dict["cycle_fake_img"], (256,256),mode='bilinear'), F.interpolate(run_dict["source_color"], (256,256),mode='bilinear'))
+            L_vgg = Loss.get_vgg_loss(F.interpolate(run_dict["cycle_fake_img"], (256,256), mode='bilinear'), F.interpolate(run_dict["source_color"], (256,256), mode='bilinear'))
             L_G += self.CONFIG['LOSS']['W_VGG'] * L_vgg
             self.loss_dict["L_vgg"] = round(L_vgg.item(), 4)
             
@@ -27,10 +27,10 @@ class MyModelLoss(LossInterface):
         #     L_G += self.CONFIG['LOSS']['W_RECON'] * L_recon
         #     self.loss_dict["L_recon"] = round(L_recon.item(), 4)
 
-        # if self.CONFIG['LOSS']['W_cycle']:
-        #     L_cycle = Loss.get_L1_loss(run_dict["recon_target_flip"], run_dict["target_flip"])
-        #     L_G += self.CONFIG['LOSS']['W_cycle'] * L_cycle
-        #     self.loss_dict["L_cycle"] = round(L_cycle.item(), 4)
+        if self.CONFIG['LOSS']['W_CYCLE']:
+            L_cycle = Loss.get_L1_loss(run_dict["cycle_color_map"]*(1-run_dict["source_mask"][:,0].unsqueeze(1)), run_dict["source_color"]*(1-run_dict["source_mask"][:,0].unsqueeze(1)))
+            L_G += self.CONFIG['LOSS']['W_CYCLE'] * L_cycle
+            self.loss_dict["L_cycle"] = round(L_cycle.item(), 4)
         
         # feat loss for Projected D
         if self.CONFIG['LOSS']['W_FEAT']:

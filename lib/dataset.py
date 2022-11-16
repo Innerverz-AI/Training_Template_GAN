@@ -10,8 +10,9 @@ import torch
 import cv2
 
 # color, gray, mask
+# train valid 
 class DatasetInterface(Dataset):
-    def __init__(self, CONFIG):
+    def __init__(self, CONFIG, mode='train'):
         
         self.img_size = CONFIG['BASE']['IMG_SIZE']
         self.set_tf()
@@ -61,6 +62,9 @@ class DatasetInterface(Dataset):
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
 
+    def get_random_index(self):
+        return random.randint(0, self.__len__()-1)
+
     def __getitem__(self, item):    
         pass
 
@@ -75,28 +79,16 @@ def label_converter(before_label):
         canvas = np.where(_before_label==idx, face_parsing_converter[idx], canvas)
     return canvas
 
-def to_one_hot(Xt):
-    Xt_ = torch.tensor(Xt, dtype=torch.int64)
-    c = 13
-    h,w = Xt_.size()
+def to_one_hot(mask): # 0 ~ 8 h w
+    mask_ = torch.tensor(mask, dtype=torch.int64)
+    c = np.array(list(face_parsing_converter.values())).max() + 1
+    h,w = mask_.size()
 
-    Xt_ = torch.reshape(Xt_,(1,1,h,w))
-    one_hot_Xt = torch.FloatTensor(1, c, h, w).zero_()
-    one_hot_Xt_ = one_hot_Xt.scatter_(1, Xt_, 1.0)
-    one_hot_Xt_ = F.interpolate(one_hot_Xt_,(h,w),mode='nearest')
-    return one_hot_Xt_.squeeze()
-
-def vis_mask(one_hot_mask, name=None, grid_result=False):
-    os.makedirs(f'./result/{name}', exist_ok=True)
-    c, _, _ = one_hot_mask.shape
-
-    grid = []
-    for idx in range(c):
-        one_ch = one_hot_mask[idx]
-        _one_ch = np.array(one_ch)
-        grid.append(_one_ch * 255)
-        # cv2.imwrite(f'./result/{name}/{idx}.png', _one_ch * 255)
-    if grid_result: cv2.imwrite(f'./result/{name}/grid.png', np.concatenate(grid,axis=-1))
+    mask_ = torch.reshape(mask_,(1,1,h,w))
+    one_hot_mask = torch.zeros(1, c, h, w)
+    one_hot_mask_ = one_hot_mask.scatter_(1, mask_, 1.0)
+    one_hot_mask_ = F.interpolate(one_hot_mask_, (h,w), mode='nearest')
+    return one_hot_mask_.squeeze()
 
 face_parsing_converter = {
     0 : 0,
@@ -112,10 +104,10 @@ face_parsing_converter = {
     10 : 1,
     11 : 6,
     12 : 7,
-    13 : 8,
+    13 : 7,
     14 : 1,
     15 : 0,
     16 : 0,
-    17 : 9,
+    17 : 8,
     18 : 0
 }

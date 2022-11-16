@@ -11,14 +11,14 @@ BASE:
     PACKAGES_PATH: /home/compu/FaceSwapping/packages
     DO_VALID: False
     DO_TEST: False
-    IMG_SIZE: 128
+    IMG_SIZE: 512
 
 # weight of loss
 LOSS:
     W_ADV: 1
     W_VGG: 10
     W_RECON: 0
-    W_CYCLE: 0
+    W_CYCLE: 10
     W_FEAT: 10
 
 CYCLE:

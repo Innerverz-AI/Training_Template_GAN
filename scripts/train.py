@@ -6,6 +6,7 @@ from lib import utils
 from MyModel.model import MyModel
 import torch
 import wandb
+from distutils import dir_util
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -63,6 +64,7 @@ if __name__ == "__main__":
     utils.make_dirs(CONFIG)
     utils.print_dict(CONFIG)
     utils.save_yaml(f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}.yaml", CONFIG)
+    dir_util.copy_tree("./MyModel", CONFIG['BASE']['SAVE_ROOT_CODE'])
 
     # Set up multi-GPU training
     if CONFIG['BASE']['USE_MULTI_GPU']:

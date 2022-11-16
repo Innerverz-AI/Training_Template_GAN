@@ -39,9 +39,7 @@ class MyDataset(DatasetInterface):
     def __len__(self):
         return len(self.image_path_list)
     
-    def get_random_index(self):
-        return random.randint(0, self.__len__()-1)
-
+    # override
     def set_tf(self):
 
         self.tf_gray = transforms.Compose([
