@@ -4,10 +4,10 @@
 BASE:
     MODEL_ID: COLOR_TRANSFER
     USE_MULTI_GPU: False
-    SAME_PROB: 0.2
+    SAME_PROB: 0
     BATCH_PER_GPU: 4
     MAX_STEP: 400000
-    SAVE_ROOT: train_result
+    SAVE_ROOT: train_results
     PACKAGES_PATH: /home/compu/FaceSwapping/packages
     DO_VALID: False
     DO_TEST: False
@@ -16,15 +16,16 @@ BASE:
 # weight of loss
 LOSS:
     W_ADV: 1
-    W_VGG: 10
+    W_VGG:
     W_RECON: 0
-    W_CYCLE: 10
+    W_CYCLE: 20
     W_FEAT: 10
 
 CYCLE:
     LOSS: 10
+    IMAGE: 200
     VALID: 500
-    TEST: 200
+    TEST: 500
     CKPT: 2500
 
 CKPT:

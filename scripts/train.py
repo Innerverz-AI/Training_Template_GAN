@@ -29,24 +29,29 @@ def train(gpu, CONFIG):
         model.go_step()
 
         if CONFIG['BASE']['IS_MASTER']:
+            
             # Save and print loss
             if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['LOSS'] == 0:
                 model.loss_collector.print_loss()
-
-                if CONFIG['WANDB']['TURN_ON']:
-                    wandb.log(model.loss_collector.loss_dict)
+                model.loss_collector.log_wandb()
                 
             # Save image
-            if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['TEST'] == 0:
+            if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['IMAGE'] == 0:
                 utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_train.jpg", model.train_images)
-
-            if CONFIG['BASE']['DO_VALID'] and CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['VALID'] == 0:
-                model.do_validation()
-                utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_valid.jpg", model.valid_images)
 
             # Save checkpoint parameters 
             if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['CKPT'] == 0:
                 model.save_checkpoint()
+
+            if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['VALID'] == 0:
+                if CONFIG['BASE']['DO_VALID']:
+                    model.do_validation()
+                    utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_valid.jpg", model.valid_images)
+
+            if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['TEST'] == 0:
+                if CONFIG['BASE']['DO_TEST']:
+                    model.do_test()
+                    utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_test.jpg", model.test_images)
 
         CONFIG['BASE']['GLOBAL_STEP'] += 1
 
@@ -59,7 +64,7 @@ if __name__ == "__main__":
     # update configs
     CONFIG['BASE']['RUN_ID'] = sys.argv[1] # command line: python train.py {run_id}
     CONFIG['BASE']['GPU_NUM'] = torch.cuda.device_count()
-    
+
     # save config
     utils.make_dirs(CONFIG)
     utils.print_dict(CONFIG)

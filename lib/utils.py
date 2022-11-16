@@ -19,6 +19,16 @@ def save_yaml(save_path, dict):
         yaml.dump(dict, f)
 
 def make_dirs(CONFIG):
+    os.makedirs(CONFIG['BASE']['SAVE_ROOT'], exist_ok=True)
+
+    train_result_dirs = os.listdir(CONFIG['BASE']['SAVE_ROOT'])
+    if train_result_dirs:
+        last_train_index = sorted(train_result_dirs)[-1][:3]
+        CONFIG['BASE']['RUN_ID'] = f"{str(int(last_train_index)+1).zfill(3)}_{CONFIG['BASE']['RUN_ID']}"
+    
+    else:
+        CONFIG['BASE']['RUN_ID'] = f"000_{CONFIG['BASE']['RUN_ID']}"    
+
     CONFIG['BASE']['SAVE_ROOT_RUN'] = f"{CONFIG['BASE']['SAVE_ROOT']}/{CONFIG['BASE']['RUN_ID']}"
     os.makedirs(CONFIG['BASE']['SAVE_ROOT_RUN'], exist_ok=True)
 

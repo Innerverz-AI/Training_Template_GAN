@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import time
 import torchvision
-
+import wandb
 
 class LossInterface(metaclass=abc.ABCMeta):
     """
@@ -21,6 +21,9 @@ class LossInterface(metaclass=abc.ABCMeta):
         self.start_time = time.time()
         self.loss_dict = {}
 
+    def log_wandb(self):
+        if self.CONFIG['WANDB']['TURN_ON']:
+            wandb.log(self.loss_dict)
 
     def print_loss(self):
         """

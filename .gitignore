@@ -1,4 +1,5 @@
 train_result/
+train_results/
 wandb/
 *.zip
 *.pyc
