@@ -5,12 +5,13 @@ BASE:
     MODEL_ID: COLOR_TRANSFER
     USE_MULTI_GPU: False
     SAME_PROB: 0
-    BATCH_PER_GPU: 4
+    BATCH_PER_GPU: 2
     MAX_STEP: 400000
     SAVE_ROOT: train_results
     PACKAGES_PATH: /home/compu/FaceSwapping/packages
-    DO_VALID: False
-    DO_TEST: False
+    DO_TRAIN: True
+    DO_VALID: True
+    DO_TEST: True
     IMG_SIZE: 512
 
 # weight of loss
@@ -23,9 +24,9 @@ LOSS:
 
 CYCLE:
     LOSS: 10
-    IMAGE: 200
-    VALID: 500
-    TEST: 500
+    IMAGE: 100
+    VALID: 100
+    TEST: 100
     CKPT: 2500
 
 CKPT:
@@ -33,11 +34,11 @@ CKPT:
     # load checkpoints from ./train_result/{ckpt_id}/ckpt/G_{ckpt_step}.pt
     # if ckpt_id is empty, load G_latest.pt and D_latest.pt
     TURN_ON: False
-    ID: 
+    ID_NUM: 002
     STEP:
 
 WANDB:
-    TURN_ON: TRUE
+    TURN_ON: False
     ALERT_THRES: 1000
 
 
@@ -48,14 +49,16 @@ OPTIMIZER:
     LR_D: 0.00001
 
 DATASET:
-    TRAIN: [
-        '../dataset/CelebHQ',
-        '../dataset/ffhq16k'
-        ]
+    TRAIN_PATH:
+        IMAGE:
+            - /home/compu/Datasets/Small_CelebA_HQ/images
+        MASK:
+            - /home/compu/Datasets/Small_CelebA_HQ/labels
 
-    VALID: [
-        '../dataset/CelebHQ',
-        '../dataset/ffhq16k'
-        ]
+    VAL_SIZE: 10
 
-    TEST: ./assets/k-celeb
+    TEST_PATH:
+        IMAGE:
+            - ./test/images
+        MASK:
+            - ./test/labels 

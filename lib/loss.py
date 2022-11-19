@@ -20,6 +20,11 @@ class LossInterface(metaclass=abc.ABCMeta):
         self.CONFIG = CONFIG
         self.start_time = time.time()
         self.loss_dict = {}
+        self.loss_dict['L_G'] = .0
+        self.loss_dict['L_D'] = .0
+        self.loss_dict['valid_L_G'] = .0
+        self.loss_dict['valid_L_D'] = .0
+        
 
     def log_wandb(self):
         if self.CONFIG['WANDB']['TURN_ON']:

@@ -96,9 +96,15 @@ def save_grid_image(img_path, images_list):
     grid = grid.detach().cpu().numpy().transpose([1,2,0]) * 255
 
     cv2.imwrite(img_path, grid[:,:,::-1])
+    
+def stack_image_grid(batch_data_items : list, target_image : list):
+    column = []
+    for item in batch_data_items:
+        column.append(item)
+    target_image.append(torch.cat(column, dim=-2))
 
 def load_checkpoint(CONFIG, model, optimizer, type):
-
+    CONFIG['CKPT']['ID'] = [id for id in os.listdir('./train_results') if id.startswith(str(CONFIG['CKPT']['ID_NUM']).zfill(3))][0]
     ckpt_step = "latest" if CONFIG['CKPT']['STEP'] is None else CONFIG['CKPT']['STEP']
     ckpt_path = f"{CONFIG['BASE']['SAVE_ROOT']}/{CONFIG['CKPT']['ID']}/ckpt/{type}_{ckpt_step}.pt"
     

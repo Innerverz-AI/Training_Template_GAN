@@ -4,9 +4,7 @@ import time
 
 class MyModelLoss(LossInterface):
     def __init__(self, CONFIG):
-        self.CONFIG = CONFIG
-        self.start_time = time.time()
-        self.loss_dict = {}
+        super(MyModelLoss, self).__init__(CONFIG)
 
     def get_loss_G(self, run_dict, valid=False):
         L_G = 0.0
