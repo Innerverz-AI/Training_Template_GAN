@@ -1,7 +1,7 @@
 import abc
 import torch
 from torch.utils.data import DataLoader
-from MyModel.dataset import MyDataset
+from MyModel.dataset import devide_datasets, MyDataset 
 from lib import utils
 import numpy as np
 # from packages import Ranger
@@ -19,6 +19,9 @@ class ModelInterface(metaclass=abc.ABCMeta):
         """
         When overrided, super call is required.
         """
+        self.G = None
+        self.D = None
+        
         self.CONFIG = CONFIG
         self.train_dict = {}
         self.valid_dict = {}
@@ -39,42 +42,14 @@ class ModelInterface(metaclass=abc.ABCMeta):
         if self.CONFIG['CKPT']['TURN_ON']:
             self.load_checkpoint()
 
-        self.devide_datasets()
+        devide_datasets(self, self.CONFIG)
         self.set_datasets()
         self.set_loss_collector()
 
         if self.CONFIG['BASE']['IS_MASTER']:
             print(f"Model {self.CONFIG['BASE']['MODEL_ID']} has successively created")
-
-    def devide_datasets(self):
-        image_path_list = utils.get_all_images(self.CONFIG['DATASET']['TRAIN_PATH']['IMAGE'])
-        mask_path_list = utils.get_all_images(self.CONFIG['DATASET']['TRAIN_PATH']['MASK'])
-        
-        if self.CONFIG['BASE']['DO_VALID']:
-            self.train_dataset_dict = {
-                'image_path_list' : image_path_list[ : -1 * self.CONFIG['DATASET']['VAL_SIZE']],
-                'mask_path_list' : mask_path_list[ : -1 * self.CONFIG['DATASET']['VAL_SIZE']]
-            }            
-            self.valid_dataset_dict = {
-                'image_path_list' : image_path_list[-1 * self.CONFIG['DATASET']['VAL_SIZE'] : ],
-                'mask_path_list' : mask_path_list[-1 * self.CONFIG['DATASET']['VAL_SIZE'] : ]
-            }
             
-        else:
-            self.train_dataset_dict = {
-                'image_path_list' : image_path_list,
-                'mask_path_list' : mask_path_list
-            }     
-        
-        if self.CONFIG['BASE']['DO_TEST']:
-            image_path_list = utils.get_all_images(self.CONFIG['DATASET']['TEST_PATH']['IMAGE'])
-            mask_path_list = utils.get_all_images(self.CONFIG['DATASET']['TEST_PATH']['MASK'])
-            self.test_dataset_dict = {
-                'image_path_list': image_path_list,
-                'mask_path_list' : mask_path_list
-            }
-
-    def load_next_batch(self, dataloader, iterator):
+    def load_next_batch(self, dataloader, iterator, mode):
         """
         Load next batch of source image, target image, and boolean values that denote 
         if source and target are identical.
@@ -84,8 +59,8 @@ class ModelInterface(metaclass=abc.ABCMeta):
             batch_data = [data.cuda() for data in batch_data]
 
         except StopIteration:
-            iterator = iter(dataloader)
-            batch_data = next(iterator)
+            self.__setattr__(mode+'_iterator', iter(dataloader))
+            batch_data = next(self.__getattribute__(mode+'_iterator'))
             batch_data = [data.cuda() for data in batch_data]
 
         return batch_data
@@ -165,7 +140,6 @@ class ModelInterface(metaclass=abc.ABCMeta):
         """
         Load pretrained parameters from checkpoint to the initialized models.
         """
-
         self.CONFIG['BASE']['GLOBAL_STEP'] = \
         utils.load_checkpoint(self.CONFIG, self.G, self.opt_G, type="G")
         if self.D : utils.load_checkpoint(self.CONFIG, self.D, self.opt_D, type="D")

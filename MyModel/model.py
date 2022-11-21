@@ -26,7 +26,7 @@ class MyModel(ModelInterface):
         self.D.eval()
 
     def go_step(self):
-        source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.train_dataloader, self.train_iterator)
+        source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.train_dataloader, self.train_iterator, 'train')
         
         self.train_dict["source_color"] = source_color
         self.train_dict["source_gray"] = source_gray
@@ -89,9 +89,9 @@ class MyModel(ModelInterface):
         self.valid_images = []
         self.set_networks_test_mode()
         
-        pbar = tqdm(range(len(self.valid_dataloader)), desc='\nRun validate..')
+        pbar = tqdm(range(len(self.valid_dataloader)), desc='Run validate..')
         for _ in pbar:
-            source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.valid_dataloader, self.valid_iterator)
+            source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')
             
             self.valid_dict["source_color"] = source_color
             self.valid_dict["source_gray"] = source_gray
@@ -103,10 +103,11 @@ class MyModel(ModelInterface):
             with torch.no_grad():
                 self.run_G(self.valid_dict)
                 self.run_D(self.valid_dict)
+                
                 self.loss_collector.loss_dict["valid_L_G"] += (self.loss_collector.get_loss_G(self.valid_dict, valid=True) / len(self.valid_dataloader))
                 self.loss_collector.loss_dict["valid_L_D"] += (self.loss_collector.get_loss_D(self.valid_dict, valid=True) / len(self.valid_dataloader))   
-                
-            utils.stack_image_grid([self.valid_dict["source_color"], self.valid_dict["target_color"], self.valid_dict["color_map"], self.valid_dict["fake_img"]], self.valid_images)
+            
+            if len(self.valid_images) < 8 : utils.stack_image_grid([self.valid_dict["source_color"], self.valid_dict["target_color"], self.valid_dict["color_map"], self.valid_dict["fake_img"]], self.valid_images)
             
         self.loss_collector.val_print_loss()
         
@@ -118,9 +119,9 @@ class MyModel(ModelInterface):
         self.test_images = []
         self.set_networks_test_mode()
         
-        pbar = tqdm(range(len(self.test_dataloader)), desc='\nRun test...')
+        pbar = tqdm(range(len(self.test_dataloader)), desc='Run test...')
         for _ in pbar:
-            source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.test_dataloader, self.test_iterator)
+            source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.test_dataloader, self.test_iterator, 'test')
             
             self.test_dict["source_color"] = source_color
             self.test_dict["source_gray"] = source_gray

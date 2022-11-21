@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import time
 import torchvision
 import wandb
+import torchvision
 
 class LossInterface(metaclass=abc.ABCMeta):
     """
@@ -222,7 +223,7 @@ class LPIPS(nn.Module):
         self.mu = torch.tensor([-0.03, -0.088, -0.188]).view(1, 3, 1, 1).cuda()
         self.sigma = torch.tensor([0.458, 0.448, 0.450]).view(1, 3, 1, 1).cuda()
 
-    def _load_lpips_weights(self, ckpt_path='packages/lpips/ckpt/lpips_weights.ckpt'):
+    def _load_lpips_weights(self, ckpt_path='lib/ckpt/lpips_weights.ckpt'):
         own_state_dict = self.state_dict()
         state_dict = torch.load(ckpt_path, map_location=torch.device('cuda'))
         for name, param in state_dict.items():
@@ -250,7 +251,7 @@ def normalize(x, eps=1e-10):
 class AlexNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.layers = models.alexnet(pretrained=True).features
+        self.layers = torchvision.models.alexnet(pretrained=True).features
         self.channels = []
         for layer in self.layers:
             if isinstance(layer, nn.Conv2d):

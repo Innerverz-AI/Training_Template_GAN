@@ -11,7 +11,7 @@ BASE:
     PACKAGES_PATH: /home/compu/FaceSwapping/packages
     DO_TRAIN: True
     DO_VALID: True
-    DO_TEST: True
+    DO_TEST: False
     IMG_SIZE: 512
 
 # weight of loss
@@ -21,21 +21,22 @@ LOSS:
     W_RECON: 0
     W_CYCLE: 20
     W_FEAT: 10
+    W_LPIPS: 10
 
 CYCLE:
     LOSS: 10
-    IMAGE: 100
-    VALID: 100
-    TEST: 100
-    CKPT: 2500
+    IMAGE: 50
+    VALID: 50
+    TEST: 50
+    CKPT: 100
 
 CKPT:
     # ckpt path
     # load checkpoints from ./train_result/{ckpt_id}/ckpt/G_{ckpt_step}.pt
     # if ckpt_id is empty, load G_latest.pt and D_latest.pt
-    TURN_ON: False
-    ID_NUM: 002
-    STEP:
+    TURN_ON: True
+    ID_NUM: 11
+    STEP: 100
 
 WANDB:
     TURN_ON: False
@@ -59,6 +60,6 @@ DATASET:
 
     TEST_PATH:
         IMAGE:
-            - ./test/images
+            - ./assets/images
         MASK:
-            - ./test/labels 
+            - ./assets/labels 

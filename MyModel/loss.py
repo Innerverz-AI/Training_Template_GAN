@@ -19,6 +19,11 @@ class MyModelLoss(LossInterface):
             L_G += self.CONFIG['LOSS']['W_VGG'] * L_vgg
             self.loss_dict["L_vgg"] = round(L_vgg.item(), 4)
             
+        if self.CONFIG['LOSS']['W_LPIPS']:
+            L_lpips = Loss.get_lpips_loss(run_dict["cycle_fake_img"], run_dict["source_color"])
+            L_G += self.CONFIG['LOSS']['W_LPIPS'] * L_lpips
+            self.loss_dict["L_lpips"] = round(L_lpips.item(),4)
+            
         # Reconstruction loss
         # if self.CONFIG['LOSS']['W_RECON']:
         #     L_recon = Loss.get_L1_loss(run_dict["fake_img"], run_dict["target"])

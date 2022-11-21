@@ -17,7 +17,6 @@ def train(gpu, CONFIG):
     CONFIG['BASE']['GLOBAL_STEP'] = 0
 
     model = MyModel(CONFIG)
-
     # Initialize wandb to gather and display loss on dashboard 
     if CONFIG['BASE']['IS_MASTER'] and CONFIG['WANDB']['TURN_ON']:
         wandb.init(project=CONFIG['BASE']['MODEL_ID'], name=CONFIG['BASE']['RUN_ID'])

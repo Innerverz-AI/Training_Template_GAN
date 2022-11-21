@@ -17,3 +17,5 @@
 [x] Automatically divide train/valid dataset from whole dataset. 
 [x] When you want to continue finished train before, you only write training number in "config.yaml" file  
 [x] Add train/eval mode select code
+[x] Fix Lpips checkpoint path
+[x] Modify minor things in "lib/nets.py" - By 1zong2

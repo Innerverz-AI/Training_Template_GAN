@@ -4,6 +4,29 @@ from lib import utils
 from lib.dataset import DatasetInterface
 from torchvision import transforms
 
+
+def devide_datasets(model, CONFIG):
+    image_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['IMAGE'])
+    mask_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['MASK'])
+    
+    if CONFIG['BASE']['DO_VALID']:
+        model.train_dataset_dict = {
+                'image_path_list' : image_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']],
+                'mask_path_list' : mask_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']]
+            }  
+        model.valid_dataset_dict = {
+                'image_path_list' : image_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ],
+                'mask_path_list' : mask_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ]
+            }
+    
+    if CONFIG['BASE']['DO_TEST']:
+        image_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['IMAGE'])
+        mask_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['MASK'])
+        model.train_dataset_dict = {
+            'image_path_list': image_path_list,
+            'mask_path_list' : mask_path_list
+        }
+
 class MyDataset(DatasetInterface):
     def __init__(self, CONFIG, mode, dataset_path_list):
         super(MyDataset, self).__init__(CONFIG)
@@ -20,7 +43,6 @@ class MyDataset(DatasetInterface):
     def __getitem__(self, index):
         
         # you can use random.choice(paths) or random.sample(paths, num)
-
         source_color = self.pp_image(self.image_path_list[index])
         source_gray = self.pp_image(self.image_path_list[index], grayscale=True)
         source_mask = self.pp_label(self.mask_path_list[index])
@@ -39,7 +61,6 @@ class MyDataset(DatasetInterface):
     def __len__(self):
         return len(self.image_path_list)
 
-    
     # override
     def set_tf(self):
 
