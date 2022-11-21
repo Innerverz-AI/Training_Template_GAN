@@ -12,8 +12,7 @@ import cv2
 # color, gray, mask
 # train valid 
 class DatasetInterface(Dataset):
-    def __init__(self, CONFIG, mode='train'):
-        
+    def __init__(self, CONFIG):
         self.img_size = CONFIG['BASE']['IMG_SIZE']
         self.set_tf()
 

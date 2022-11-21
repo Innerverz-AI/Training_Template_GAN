@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class AdaIN(nn.Module):
     def __init__(self, style_dim, num_features):
@@ -119,23 +120,35 @@ class AdaINResBlock(nn.Module):
 
         self.AdaIN1 = AdaIN(style_dim, in_c)
         self.AdaIN2 = AdaIN(style_dim, out_c)
-        self.activ = nn.LeakyReLU(0.2)
+
+        self.activ1 = nn.LeakyReLU(0.2)
+        self.activ2 = nn.LeakyReLU(0.2)
+
         self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, bias=False)
-        self.resize = Interpolate(scale_factor=scale_factor)
 
-    def forward(self, feat, v_sid):
-        feat1 = self.AdaIN1(feat, v_sid)
-        feat1 = self.activ(feat1)
+        self.scale_factor = scale_factor
+        self.resize = scale_factor == 1
+
+    def forward(self, feat, style):
+
+        feat1 = feat
+        feat1 = self.AdaIN1(feat1, style)
+        feat1 = self.activ1(feat1)
         feat1 = self.conv1(feat1)
-        feat1 = self.resize(feat1)
-        feat1 = self.AdaIN2(feat1, v_sid)
-        feat1 = self.activ(feat1)
+
+        if self.resize:
+            feat1 = F.interpolate(feat1, scale_factor=self.scale_factor)
+
+        feat1 = self.AdaIN2(feat1, style)
+        feat1 = self.activ2(feat1)
         feat1 = self.conv2(feat1)
 
         # skip connction
-        feat2 = self.conv1x1(feat) # chnnel dim
-        feat2 = self.resize(feat2) # size 
+        feat2 = feat
+        if self.resize:
+            feat2 = self.conv1x1(feat2) # chnnel dim
+            feat2 = F.interpolate(feat2, scale_factor=self.scale_factor) # size
 
         return feat1 + feat2

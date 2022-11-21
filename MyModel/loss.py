@@ -4,9 +4,7 @@ import time
 
 class MyModelLoss(LossInterface):
     def __init__(self, CONFIG):
-        self.CONFIG = CONFIG
-        self.start_time = time.time()
-        self.loss_dict = {}
+        super(MyModelLoss, self).__init__(CONFIG)
 
     def get_loss_G(self, run_dict, valid=False):
         L_G = 0.0
@@ -20,6 +18,11 @@ class MyModelLoss(LossInterface):
             L_vgg = Loss.get_vgg_loss(F.interpolate(run_dict["cycle_fake_img"], (256,256), mode='bilinear'), F.interpolate(run_dict["source_color"], (256,256), mode='bilinear'))
             L_G += self.CONFIG['LOSS']['W_VGG'] * L_vgg
             self.loss_dict["L_vgg"] = round(L_vgg.item(), 4)
+            
+        if self.CONFIG['LOSS']['W_LPIPS']:
+            L_lpips = Loss.get_lpips_loss(run_dict["cycle_fake_img"], run_dict["source_color"])
+            L_G += self.CONFIG['LOSS']['W_LPIPS'] * L_lpips
+            self.loss_dict["L_lpips"] = round(L_lpips.item(),4)
             
         # Reconstruction loss
         # if self.CONFIG['LOSS']['W_RECON']:
