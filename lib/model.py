@@ -1,7 +1,7 @@
 import abc
 import torch
 from torch.utils.data import DataLoader
-from MyModel.dataset import devide_datasets, MyDataset 
+from MyModel.dataset import divide_datasets, MyDataset 
 from lib import utils
 import numpy as np
 # from packages import Ranger
@@ -42,7 +42,7 @@ class ModelInterface(metaclass=abc.ABCMeta):
         if self.CONFIG['CKPT']['TURN_ON']:
             self.load_checkpoint()
 
-        devide_datasets(self, self.CONFIG)
+        divide_datasets(self, self.CONFIG)
         self.set_datasets()
         self.set_loss_collector()
 

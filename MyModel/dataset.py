@@ -5,7 +5,7 @@ from lib.dataset import DatasetInterface
 from torchvision import transforms
 
 
-def devide_datasets(model, CONFIG):
+def divide_datasets(model, CONFIG):
     image_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['IMAGE'])
     mask_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['MASK'])
     
