@@ -26,3 +26,4 @@
 [ ] train_dataset_dict does not defined when DO_VALID is False  
 [ ] valid loss should be initialized to 0 when the do_validation function is called  
 [ ] set F.interpolate to bilinear mode
+[ ] use divide_datasets only if DO_VALID==TRUE
