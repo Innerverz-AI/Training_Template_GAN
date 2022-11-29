@@ -25,6 +25,6 @@
 [ ] lib/dataset.py line 25: train_dataset_dict >> test_dataset_dict  
 [ ] train_dataset_dict does not defined when DO_VALID is False  
 [ ] valid loss should be initialized to 0 when the do_validation function is called  
-[ ] set F.interpolate to bilinear mode
+[ ] set F.interpolate to bilinear mode  
 [ ] use divide_datasets only if DO_VALID==TRUE  
 [ ] set beta of Adam optimizer [0, 0.999] as default  
