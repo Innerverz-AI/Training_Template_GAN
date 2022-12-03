@@ -88,7 +88,8 @@ class MyModel(ModelInterface):
     def do_validation(self):
         self.valid_images = []
         self.set_networks_test_mode()
-        
+
+        self.loss_collector.loss_dict["valid_L_G"],  self.loss_collector.loss_dict["valid_L_D"] = 0., 0.
         pbar = tqdm(range(len(self.valid_dataloader)), desc='Run validate..')
         for _ in pbar:
             source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')

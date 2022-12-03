@@ -18,12 +18,18 @@ def divide_datasets(model, CONFIG):
                 'image_path_list' : image_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ],
                 'mask_path_list' : mask_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ]
             }
+
+    else:
+        model.train_dataset_dict = {
+                'image_path_list' : image_path_list[ : ],
+                'mask_path_list' : mask_path_list[ : ]
+            }
     
     if CONFIG['BASE']['DO_TEST']:
         image_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['IMAGE'])
         mask_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['MASK'])
-        model.train_dataset_dict = {
-            'image_path_list': image_path_list,
+        model.test_dataset_dict = {
+            'image_path_list' : image_path_list,
             'mask_path_list' : mask_path_list
         }
 
