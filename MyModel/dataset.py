@@ -10,7 +10,7 @@ class MyDataset(DatasetInterface):
         super(MyDataset, self).__init__(CONFIG)
         self.mode = mode
         self.set_tf()
-        
+
         self.same_prob = CONFIG['BASE']['SAME_PROB']
         
         for name, list in dataset_path_list.items() : self.__setattr__(name, list)

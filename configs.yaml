@@ -8,7 +8,7 @@ BASE:
     BATCH_PER_GPU: 2
     MAX_STEP: 400000
     SAVE_ROOT: train_results
-    PACKAGES_PATH: /home/compu/FaceSwapping/packages
+    PACKAGES_PATH:
     DO_TRAIN: True
     DO_VALID: True
     DO_TEST: False
@@ -34,12 +34,12 @@ CKPT:
     # ckpt path
     # load checkpoints from ./train_result/{ckpt_id}/ckpt/G_{ckpt_step}.pt
     # if ckpt_id is empty, load G_latest.pt and D_latest.pt
-    TURN_ON: True
-    ID_NUM: 2
+    TURN_ON: False
+    ID_NUM: 
     STEP:
 
 WANDB:
-    TURN_ON: False
+    TURN_ON: True
     ALERT_THRES: 1000
 
 
@@ -52,9 +52,9 @@ OPTIMIZER:
 DATASET:
     TRAIN_PATH:
         IMAGE:
-            - /home/compu/Datasets/Small_CelebA_HQ/images
+            - /media/deep3090/hdd/DATASET/k_face/images
         MASK:
-            - /home/compu/Datasets/Small_CelebA_HQ/labels
+            - /media/deep3090/hdd/DATASET/k_face/label
 
     VAL_SIZE: 10
 
