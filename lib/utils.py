@@ -104,7 +104,15 @@ def stack_image_grid(batch_data_items : list, target_image : list):
     target_image.append(torch.cat(column, dim=-2))
 
 def load_checkpoint(CONFIG, model, optimizer, type):
-    CONFIG['CKPT']['ID'] = [id for id in os.listdir('./train_results') if id.startswith(str(CONFIG['CKPT']['ID_NUM']).zfill(3))][0]
+
+    FLAG = False 
+    for run_id in os.listdir('./train_results'):
+        if int(run_id[:3]) == CONFIG['CKPT']['ID_NUM']:
+            CONFIG['CKPT']['ID'] = run_id
+            FLAG = True
+
+    assert FLAG, 'IN_NUM is wrong'
+
     ckpt_step = "latest" if CONFIG['CKPT']['STEP'] is None else CONFIG['CKPT']['STEP']
     ckpt_path = f"{CONFIG['BASE']['SAVE_ROOT']}/{CONFIG['CKPT']['ID']}/ckpt/{type}_{ckpt_step}.pt"
     

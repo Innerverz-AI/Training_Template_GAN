@@ -5,34 +5,6 @@ from lib.dataset import DatasetInterface
 from torchvision import transforms
 
 
-def divide_datasets(model, CONFIG):
-    image_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['IMAGE'])
-    mask_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['MASK'])
-    
-    if CONFIG['BASE']['DO_VALID']:
-        model.train_dataset_dict = {
-                'image_path_list' : image_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']],
-                'mask_path_list' : mask_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']]
-            }  
-        model.valid_dataset_dict = {
-                'image_path_list' : image_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ],
-                'mask_path_list' : mask_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ]
-            }
-
-    else:
-        model.train_dataset_dict = {
-                'image_path_list' : image_path_list[ : ],
-                'mask_path_list' : mask_path_list[ : ]
-            }
-    
-    if CONFIG['BASE']['DO_TEST']:
-        image_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['IMAGE'])
-        mask_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['MASK'])
-        model.test_dataset_dict = {
-            'image_path_list' : image_path_list,
-            'mask_path_list' : mask_path_list
-        }
-
 class MyDataset(DatasetInterface):
     def __init__(self, CONFIG, mode, dataset_path_list):
         super(MyDataset, self).__init__(CONFIG)
@@ -85,3 +57,31 @@ class MyDataset(DatasetInterface):
             transforms.ToTensor(),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
         ])
+
+def divide_datasets(model, CONFIG):
+    image_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['IMAGE'])
+    mask_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['MASK'])
+    
+    if CONFIG['BASE']['DO_VALID']:
+        model.train_dataset_dict = {
+                'image_path_list' : image_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']],
+                'mask_path_list' : mask_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']]
+            }  
+        model.valid_dataset_dict = {
+                'image_path_list' : image_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ],
+                'mask_path_list' : mask_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ]
+            }
+
+    else:
+        model.train_dataset_dict = {
+                'image_path_list' : image_path_list[ : ],
+                'mask_path_list' : mask_path_list[ : ]
+            }
+    
+    if CONFIG['BASE']['DO_TEST']:
+        image_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['IMAGE'])
+        mask_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['MASK'])
+        model.test_dataset_dict = {
+            'image_path_list' : image_path_list,
+            'mask_path_list' : mask_path_list
+        }

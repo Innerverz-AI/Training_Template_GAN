@@ -35,8 +35,8 @@ CKPT:
     # load checkpoints from ./train_result/{ckpt_id}/ckpt/G_{ckpt_step}.pt
     # if ckpt_id is empty, load G_latest.pt and D_latest.pt
     TURN_ON: True
-    ID_NUM: 11
-    STEP: 100
+    ID_NUM: 2
+    STEP:
 
 WANDB:
     TURN_ON: False
