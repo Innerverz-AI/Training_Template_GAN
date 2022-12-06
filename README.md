@@ -20,11 +20,13 @@
 [x] Fix Lpips checkpoint path  
 [x] Modify minor things in "lib/nets.py" - By 1zong2
 
-## Request
+### 22.12.3
 
-[ ] lib/dataset.py line 25: train_dataset_dict >> test_dataset_dict  
-[ ] train_dataset_dict does not defined when DO_VALID is False  
-[ ] valid loss should be initialized to 0 when the do_validation function is called  
-[ ] set F.interpolate to bilinear mode  
+[x] lib/dataset.py line 25: train_dataset_dict >> test_dataset_dict  
+[x] train_dataset_dict does not defined when DO_VALID is False  
+[x] valid loss should be initialized to 0 when the do_validation function is called  
+[x] set F.interpolate to bilinear mode  
+[x] set beta of Adam optimizer [0, 0.999] as default  
+
+## Request
 [ ] use divide_datasets only if DO_VALID==TRUE  
-[ ] set beta of Adam optimizer [0, 0.999] as default  

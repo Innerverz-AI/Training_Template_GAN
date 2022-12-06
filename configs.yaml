@@ -45,7 +45,7 @@ WANDB:
 
 OPTIMIZER:
     TYPE: Adam # [Ranger, Adam]
-    BETA: [0.9, 0.999] # default: Adam (0.9, 0.999) / Ranger (0.95, 0.999)
+    BETA: [0.0, 0.999] # default: Adam (0.9, 0.999) / Ranger (0.95, 0.999)
     LR_G: 0.0001
     LR_D: 0.00001
 

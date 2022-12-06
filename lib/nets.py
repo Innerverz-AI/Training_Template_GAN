@@ -139,7 +139,7 @@ class AdaINResBlock(nn.Module):
         feat1 = self.conv1(feat1)
 
         if self.resize:
-            feat1 = F.interpolate(feat1, scale_factor=self.scale_factor)
+            feat1 = F.interpolate(feat1, scale_factor=self.scale_factor, mode='biliear')
 
         feat1 = self.AdaIN2(feat1, style)
         feat1 = self.activ2(feat1)
@@ -149,6 +149,6 @@ class AdaINResBlock(nn.Module):
         feat2 = feat
         if self.resize:
             feat2 = self.conv1x1(feat2) # chnnel dim
-            feat2 = F.interpolate(feat2, scale_factor=self.scale_factor) # size
+            feat2 = F.interpolate(feat2, scale_factor=self.scale_factor, mode='biliear') # size
 
         return feat1 + feat2
