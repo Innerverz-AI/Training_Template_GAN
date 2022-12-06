@@ -29,4 +29,8 @@
 [x] set beta of Adam optimizer [0, 0.999] as default  
 
 ## Request
-[ ] use divide_datasets only if DO_VALID==TRUE  
+
+## Issues
+If you face an error as below, do this >> pip install timm==0.5.4
+"AttributeError: 'EfficientNet' object has no attribute 'act1'"
+ref: https://github.com/autonomousvision/projected_gan/issues/88
