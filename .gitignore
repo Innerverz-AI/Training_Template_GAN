@@ -4,7 +4,7 @@ test/
 wandb/
 *.zip
 *.pyc
-
+.DS_Store
 # to remain gitkeep
 # !packages/
 packages

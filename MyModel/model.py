@@ -134,7 +134,7 @@ class MyModel(ModelInterface):
             with torch.no_grad():
                 self.run_G(self.test_dict)
                 self.run_D(self.test_dict)
-                             
+
             utils.stack_image_grid([self.test_dict["source_color"], self.test_dict["target_color"], self.test_dict["color_map"], self.test_dict["fake_img"]], self.test_images)
         
         self.test_images = torch.cat(self.test_images, dim=-1)
