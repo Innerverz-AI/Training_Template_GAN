@@ -33,6 +33,7 @@
 [ ]
 
 ## Issues
-### 1. AttributeError: 'EfficientNet' object has no attribute 'act1'
-If you face an error above, do this >> pip install timm==0.5.4  
-ref: https://github.com/autonomousvision/projected_gan/issues/88
+### Error #1
+AttributeError: 'EfficientNet' object has no attribute 'act1'   
+If you face an error above, do this >> pip install timm==0.5.4     
+ref: https://github.com/autonomousvision/projected_gan/issues/88    
