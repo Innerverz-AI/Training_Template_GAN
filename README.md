@@ -30,8 +30,8 @@
 
 ## Request
 
-[ ]
-
+[ ] set_networks_test_mode > set_networks_eval_mode
+[ ] sys.path.append(CONFIG['BASE']['PACKAGES_PATH'])
 ## Issues
 ### Error #1
 AttributeError: 'EfficientNet' object has no attribute 'act1'   
