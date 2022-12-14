@@ -14,17 +14,6 @@ class AdaIN(nn.Module):
         gamma, beta = torch.chunk(h, chunks=2, dim=1)
         return (1 + gamma) * self.norm(x) + beta
 
-class Interpolate(nn.Module):
-    def __init__(self, scale_factor, mode="bilinear"):
-        super(Interpolate, self).__init__()
-        self.interp = nn.functional.interpolate
-        self.scale_factor = scale_factor
-        self.mode = mode
-        
-    def forward(self, x):
-        x = self.interp(x, scale_factor=self.scale_factor, mode=self.mode, align_corners=False)
-        return x
-
 #------------------------------------------------------------------------------------------
 # ConvBlock
 #   1. Upsample / Conv(padding)
@@ -41,12 +30,13 @@ class ConvBlock(nn.Module):
         super(ConvBlock, self).__init__()
 
         # convolutional layer and upsampling
+        self.up = transpose
+        self.scale_factor = stride
+
         if transpose:
-            self.up = Interpolate(scale_factor=stride)
-            self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride=1, padding=padding)
+            self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride=1, padding=padding, padding_mode='reflect', bias=False)
         else:
-            self.up = transpose
-            self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride, padding=padding)
+            self.conv = nn.Conv2d(input_dim, output_dim, kernel_size, stride, padding=padding, padding_mode='reflect', bias=False)
         
         # normalization
         if norm_type == 'bn':
@@ -75,7 +65,7 @@ class ConvBlock(nn.Module):
 
     def forward(self, x):
         if self.up:
-            x = self.up(x)
+            x = F.interpolate(x, scale_factor=self.scale_factor, mode='bilinear')
 
         x = self.conv(x)
 
@@ -88,45 +78,57 @@ class ConvBlock(nn.Module):
 
 
 class ResBlock(nn.Module):
-    def __init__(self, in_c, out_c, scale_factor=1, norm='in', act='lrelu'):
+    def __init__(self, in_c, out_c, scale_factor=1, norm='bn', act='lrelu'):
         super(ResBlock, self).__init__()
 
-        self.norm1 = nn.InstanceNorm2d(out_c)
-        self.norm2 = nn.InstanceNorm2d(out_c)
-        self.activ = nn.LeakyReLU(0.2)
-        self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, bias=False)
-        self.resize = Interpolate(scale_factor=scale_factor)
+        self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, padding_mode='reflect', bias=False)
+        self.norm1 = nn.BatchNorm2d(out_c)
+        self.activ1 = nn.LeakyReLU(0.2)
+
+        self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, padding_mode='reflect', bias=False)
+        self.norm2 = nn.BatchNorm2d(out_c)
+        self.activ2 = nn.LeakyReLU(0.2)
+
+        self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, padding_mode='reflect', bias=False)
+        
+        self.scale_factor = scale_factor
+        self.resize = scale_facetor == 1
 
     def forward(self, feat):
-        feat1 = self.norm1(feat)
-        feat1 = self.activ(feat1)
-        feat1 = self.conv1(feat1)
-        feat1 = self.resize(feat1)
-        feat1 = self.norm2(feat1)
-        feat1 = self.activ(feat1)
-        feat1 = self.conv2(feat1)
 
-        feat2 = self.conv1x1(feat)
-        feat2 = self.resize(feat2)
+        feat1 = feat
+        feat1 = self.conv1(feat1)
+        feat1 = self.norm1(feat1, style)
+        feat1 = self.activ1(feat1)
+
+        if self.resize:
+            feat1 = F.interpolate(feat1, scale_factor=self.scale_factor, mode='bilinear')
+
+        feat1 = self.conv2(feat1)
+        feat1 = self.norm2(feat1, style)
+        feat1 = self.activ2(feat1)
+
+        # skip connction
+        feat2 = feat
+        if self.resize:
+            feat2 = F.interpolate(feat2, scale_factor=self.scale_factor, mode='bilinear') # size
+            feat2 = self.conv1x1(feat2) # chnnel dim
 
         return feat1 + feat2
-
 
 class AdaINResBlock(nn.Module):
     def __init__(self, in_c, out_c, scale_factor=1, style_dim=512):
         super(AdaINResBlock, self).__init__()
 
+        self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, padding_mode='reflect', bias=False)
         self.AdaIN1 = AdaIN(style_dim, in_c)
-        self.AdaIN2 = AdaIN(style_dim, out_c)
-
         self.activ1 = nn.LeakyReLU(0.2)
+
+        self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, padding_mode='reflect', bias=False)
+        self.AdaIN2 = AdaIN(style_dim, out_c)
         self.activ2 = nn.LeakyReLU(0.2)
 
-        self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, bias=False)
-        self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, bias=False)
+        self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, padding_mode='reflect', bias=False)
 
         self.scale_factor = scale_factor
         self.resize = scale_factor == 1
@@ -134,21 +136,21 @@ class AdaINResBlock(nn.Module):
     def forward(self, feat, style):
 
         feat1 = feat
+        feat1 = self.conv1(feat1)
         feat1 = self.AdaIN1(feat1, style)
         feat1 = self.activ1(feat1)
-        feat1 = self.conv1(feat1)
 
         if self.resize:
-            feat1 = F.interpolate(feat1, scale_factor=self.scale_factor, mode='biliear')
+            feat1 = F.interpolate(feat1, scale_factor=self.scale_factor, mode='bilinear')
 
+        feat1 = self.conv2(feat1)
         feat1 = self.AdaIN2(feat1, style)
         feat1 = self.activ2(feat1)
-        feat1 = self.conv2(feat1)
 
         # skip connction
         feat2 = feat
         if self.resize:
+            feat2 = F.interpolate(feat2, scale_factor=self.scale_factor, mode='bilinear') # size
             feat2 = self.conv1x1(feat2) # chnnel dim
-            feat2 = F.interpolate(feat2, scale_factor=self.scale_factor, mode='biliear') # size
 
         return feat1 + feat2
