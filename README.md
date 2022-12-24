@@ -31,7 +31,7 @@
 ## Request
 
 [ ] set_networks_test_mode > set_networks_eval_mode  
-[ ] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py line16
+[ ] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py line16   
 [ ] add ID loss  
 [ ] sort data paths list  
 
