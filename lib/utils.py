@@ -43,12 +43,12 @@ def get_all_images(dataset_root_list):
     image_paths = []
 
     for dataset_root in dataset_root_list:
-        image_paths += sorted(glob.glob(f"{dataset_root}/*.*g"))
+        image_paths += glob.glob(f"{dataset_root}/*.*g")
         for root, dirs, _ in os.walk(dataset_root):
             for dir in dirs:
-                image_paths += sorted(glob.glob(f"{root}/{dir}/*.*g"))
+                image_paths += glob.glob(f"{root}/{dir}/*.*g")
 
-    return image_paths
+    return sorted(image_paths)
 
 def requires_grad(model, flag=True):
     for p in model.parameters():

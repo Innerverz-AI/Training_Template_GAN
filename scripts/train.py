@@ -12,6 +12,7 @@ warnings.filterwarnings('ignore')
 
 def train(gpu, CONFIG): 
     torch.cuda.set_device(gpu)
+    sys.path.append(CONFIG['BASE']['PACKAGES_PATH'])
 
     CONFIG['BASE']['GPU_ID'] = gpu
     CONFIG['BASE']['GLOBAL_STEP'] = 0

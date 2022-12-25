@@ -15,13 +15,17 @@ class MyModel(ModelInterface):
         
         self.set_networks_train_mode()
 
+        # PACKAGES
+        from id_extractor import IdExtractor
+        self.IE = IdExtractor()
+
     def set_networks_train_mode(self):
         self.G.train()
         self.D.train()
         self.D.feature_network.eval()
         self.D.feature_network.requires_grad_(False)
         
-    def set_networks_test_mode(self):
+    def set_networks_eval_mode(self):
         self.G.eval()
         self.D.eval()
 
@@ -87,7 +91,7 @@ class MyModel(ModelInterface):
 
     def do_validation(self):
         self.valid_images = []
-        self.set_networks_test_mode()
+        self.set_networks_eval_mode()
 
         self.loss_collector.loss_dict["valid_L_G"],  self.loss_collector.loss_dict["valid_L_D"] = 0., 0.
         pbar = tqdm(range(len(self.valid_dataloader)), desc='Run validate..')
@@ -118,7 +122,7 @@ class MyModel(ModelInterface):
         
     def do_test(self):
         self.test_images = []
-        self.set_networks_test_mode()
+        self.set_networks_eval_mode()
         
         pbar = tqdm(range(len(self.test_dataloader)), desc='Run test...')
         for _ in pbar:
