@@ -28,12 +28,15 @@
 [x] set F.interpolate to bilinear mode  
 [x] set beta of Adam optimizer [0, 0.999] as default  
 
-## Request
+### 22.12.25
 
-[ ] set_networks_test_mode > set_networks_eval_mode  
-[ ] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py line16   
-[ ] add ID loss  
-[ ] sort data paths list  
+[x] set_networks_test_mode > set_networks_eval_mode  
+[x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py line16   
+[x] add ID loss  
+[x] sort data paths list  
+[x] add an example of the package importing
+
+## Request
 
 ## Issues
 ### Error #1
