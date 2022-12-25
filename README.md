@@ -31,12 +31,13 @@
 ### 22.12.25
 
 [x] set_networks_test_mode > set_networks_eval_mode  
-[x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py line16   
 [x] add ID loss  
 [x] sort data paths list  
 [x] add an example of the package importing
 
 ## Request
+[ ] delete sampler of valid dataloader
+[ ] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py
 
 ## Issues
 ### Error #1
