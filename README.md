@@ -36,8 +36,8 @@
 [x] add an example of the package importing
 
 ## Request
-[ ] delete sampler of valid dataloader   
-[ ] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py   
+[x] delete sampler of valid dataloader   
+[x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py   
 
 ## Issues
 ### Error #1
