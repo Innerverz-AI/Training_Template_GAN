@@ -35,9 +35,12 @@
 [x] sort data paths list  
 [x] add an example of the package importing
 
-## Request
+### 23.01.13
 [x] delete sampler of valid dataloader   
-[x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py   
+[x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py 
+
+## Request  
+[ ]
 
 ## Issues
 ### Error #1
