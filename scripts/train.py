@@ -63,6 +63,7 @@ if __name__ == "__main__":
 
     # load config
     CONFIG = utils.load_yaml("./configs.yaml")
+    sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) 
 
     # update configs
     CONFIG['BASE']['RUN_ID'] = sys.argv[1] # command line: python train.py {run_id}

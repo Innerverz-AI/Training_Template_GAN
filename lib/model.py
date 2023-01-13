@@ -96,8 +96,7 @@ class ModelInterface(metaclass=abc.ABCMeta):
         Predefine test images only if args.valid_dataset_root is specified.
         These images are anchored for checking the improvement of the model.
         """
-        sampler = torch.utils.data.distributed.DistributedSampler(self.valid_dataset) if self.CONFIG['BASE']['USE_MULTI_GPU'] else None
-        self.valid_dataloader = DataLoader(self.valid_dataset, batch_size=1, pin_memory=True, sampler=sampler, drop_last=True)
+        self.valid_dataloader = DataLoader(self.valid_dataset, batch_size=1, pin_memory=True, drop_last=True)
         self.valid_iterator = iter(self.valid_dataloader)
         
     def set_test_data_iterator(self):
@@ -105,8 +104,7 @@ class ModelInterface(metaclass=abc.ABCMeta):
         Predefine test images only if args.test_dataset_root is specified.
         These images are anchored for checking the improvement of the model.
         """
-        sampler = torch.utils.data.distributed.DistributedSampler(self.test_dataset) if self.CONFIG['BASE']['USE_MULTI_GPU'] else None
-        self.test_dataloader = DataLoader(self.test_dataset, batch_size=1, pin_memory=True, sampler=sampler, drop_last=True)
+        self.test_dataloader = DataLoader(self.test_dataset, batch_size=1, pin_memory=True, drop_last=True)
         self.test_iterator = iter(self.test_dataloader)
 
     @abc.abstractmethod
