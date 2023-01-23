@@ -40,7 +40,7 @@
 [x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py 
 
 ## Request  
-[ ]
+[ ] there is an error when the Dataset returns only one variable. 
 
 ## Issues
 ### Error #1
