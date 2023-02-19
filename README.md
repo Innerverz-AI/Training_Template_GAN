@@ -41,6 +41,7 @@
 
 ## Request  
 [ ] there is an error when the Dataset returns only one variable. 
+[ ] replace config with jsonnet
 
 ## Issues
 ### Error #1
