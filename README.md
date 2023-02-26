@@ -42,6 +42,7 @@
 ## Request  
 [ ] there is an error when the Dataset returns only one variable. 
 [ ] replace config with jsonnet
+[ ] add ddp port num to config file
 
 ## Issues
 ### Error #1
