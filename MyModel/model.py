@@ -88,13 +88,13 @@ class MyModel(ModelInterface):
             with torch.no_grad():
                 self.run_G(self.valid_dict)
                 self.run_D(self.valid_dict)
+                self.loss_collector.get_loss_G(self.valid_dict, valid=True)
+                self.loss_collector.get_loss_D(self.valid_dict, valid=True)
                             
             if len(self.valid_images) < 8 : utils.stack_image_grid([self.valid_dict["source"], self.valid_dict["output"], self.valid_dict["GT"]], self.valid_images)
-            self.loss_collector.get_loss_G(self.valid_dict, valid=True)
-            self.loss_collector.get_loss_D(self.valid_dict, valid=True)
             
-        self.loss_collector.loss_dict["valid_L_G"] /= min(len(self.valid_dataloader), 8)
-        self.loss_collector.loss_dict["valid_L_D"] /= min(len(self.valid_dataloader), 8)
+        self.loss_collector.loss_dict["valid_L_G"] /= len(self.valid_dataloader)
+        self.loss_collector.loss_dict["valid_L_D"] /= len(self.valid_dataloader)
         self.loss_collector.val_print_loss()
         
         self.valid_images = torch.cat(self.valid_images, dim=-1)

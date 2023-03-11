@@ -10,7 +10,7 @@
         DO_TRAIN: true,
         DO_VALID: true,
         DO_TEST: false,
-        VAL_SIZE: 10,
+        VAL_SIZE: 16,
         IMG_SIZE: 512,
         PORT: 3456
     },
