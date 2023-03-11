@@ -42,8 +42,6 @@
 ## Request  
 [x] error occurs when the Dataset returns only one variable.   
 [x] replace config with jsonnet
-     - True/False -> true/false
-     - string -> 'string'
 [x] add ddp port num to config file
 [x] fix a bug in the calculation of valid loss
 
