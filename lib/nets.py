@@ -92,7 +92,7 @@ class ResBlock(nn.Module):
         self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, padding_mode='reflect', bias=False)
         
         self.scale_factor = scale_factor
-        self.resize = scale_facetor == 1
+        self.resize = scale_facetor != 1
 
     def forward(self, feat):
 
@@ -131,7 +131,7 @@ class AdaINResBlock(nn.Module):
         self.conv1x1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=1, stride=1, padding=0, padding_mode='reflect', bias=False)
 
         self.scale_factor = scale_factor
-        self.resize = scale_factor == 1
+        self.resize = scale_factor != 1
 
     def forward(self, feat, style):
 
