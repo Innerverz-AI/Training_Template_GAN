@@ -40,9 +40,12 @@
 [x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py 
 
 ## Request  
-[ ] there is an error when the Dataset returns only one variable.   
-[ ] replace config with jsonnet   
-[ ] add ddp port num to config file   
+[x] error occurs when the Dataset returns only one variable.   
+[x] replace config with jsonnet
+     - True/False -> true/false
+     - string -> 'string'
+[x] add ddp port num to config file
+[x] fix a bug in the calculation of valid loss
 
 ## Issues
 ### Error #1
