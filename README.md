@@ -1,5 +1,9 @@
 # INVZ Code Template
 
+```
+python scripts/train.py {run_id}
+```
+
 ## Release Note
 
 ### 22.11.16.
