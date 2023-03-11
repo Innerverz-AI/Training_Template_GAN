@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # save config
     utils.make_dirs(CONFIG)
     utils.print_dict(CONFIG)
-    utils.save_yaml(f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}.yaml", CONFIG)
+    utils.save_json(f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}", CONFIG)
     dir_util.copy_tree("./MyModel", CONFIG['BASE']['SAVE_ROOT_CODE'])
 
     # Set up multi-GPU training
