@@ -25,14 +25,19 @@ class MyModelLoss(LossInterface):
             self.loss_dict["L_vgg"] = round(L_vgg.item(), 4)
             
         if self.CONFIG['LOSS']['W_LPIPS']:
-            L_lpips = Loss.get_lpips_loss(run_dict["cycle_fake_img"], run_dict["source_color"])
+            L_lpips = Loss.get_lpips_loss(run_dict["output"], run_dict["source"])
             L_G += self.CONFIG['LOSS']['W_LPIPS'] * L_lpips
             self.loss_dict["L_lpips"] = round(L_lpips.item(),4)
             
-        # if self.CONFIG['LOSS']['W_RECON']:
-        #     L_recon = Loss.get_L1_loss(run_dict["fake_img"], run_dict["target"])
-        #     L_G += self.CONFIG['LOSS']['W_RECON'] * L_recon
-        #     self.loss_dict["L_recon"] = round(L_recon.item(), 4)
+        if self.CONFIG['LOSS']['W_L1']:
+            L_recon = Loss.get_L1_loss(run_dict["fake_img"], run_dict["target"])
+            L_G += self.CONFIG['LOSS']['W_RECON'] * L_recon
+            self.loss_dict["L_recon"] = round(L_recon.item(), 4)
+
+        if self.CONFIG['LOSS']['W_RECON']:
+            L_recon = Loss.get_L1_loss(run_dict["fake_img"], run_dict["target"])
+            L_G += self.CONFIG['LOSS']['W_RECON'] * L_recon
+            self.loss_dict["L_recon"] = round(L_recon.item(), 4)
 
         if self.CONFIG['LOSS']['W_CYCLE']:
             L_cycle = Loss.get_L1_loss(run_dict["cycle_color_map"]*(1-run_dict["source_mask"][:,0].unsqueeze(1)), run_dict["source_color"]*(1-run_dict["source_mask"][:,0].unsqueeze(1)))

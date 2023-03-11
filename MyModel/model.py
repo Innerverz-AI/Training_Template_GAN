@@ -30,14 +30,10 @@ class MyModel(ModelInterface):
         self.D.eval()
 
     def go_step(self):
-        source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.train_dataloader, self.train_iterator, 'train')
+        source, GT = self.load_next_batch(self.train_dataloader, self.train_iterator, 'train')
         
-        self.train_dict["source_color"] = source_color
-        self.train_dict["source_gray"] = source_gray
-        self.train_dict["source_mask"] = source_mask
-        self.train_dict["target_color"] = target_color
-        self.train_dict["target_gray"] = target_gray
-        self.train_dict["target_mask"] = target_mask
+        self.train_dict["source"] = source
+        self.train_dict["GT"] = GT
 
         # run G
         self.run_G(self.train_dict)
@@ -55,39 +51,27 @@ class MyModel(ModelInterface):
         
         # print images
         self.train_images = [
-            self.train_dict["source_color"],
-            self.train_dict["source_gray"],
-            self.train_dict["target_color"],
-            self.train_dict["target_gray"],
-            self.train_dict["color_map"],
-            self.train_dict["fake_img"],
-            self.train_dict["cycle_color_map"],
-            self.train_dict["cycle_fake_img"],
+            self.train_dict["source"],
+            self.train_dict["output"],
+            self.train_dict["GT"],
             ]
 
     def run_G(self, run_dict):
         # with torch.no_grad():
-        run_dict['blend_img'], run_dict['color_map'] = self.G([run_dict['source_color'], run_dict['source_mask'], run_dict['target_color'], run_dict['target_gray'], run_dict['target_mask']])
-        bg_mask = run_dict["target_mask"][:,0].unsqueeze(1)
-        run_dict["fake_img"] = run_dict['blend_img'] * (1-bg_mask) + run_dict["target_color"] * bg_mask
-
-        run_dict['cycle_blend_img'], run_dict['cycle_color_map'] = self.G([run_dict['fake_img'], run_dict['target_mask'], run_dict['source_color'], run_dict['source_gray'], run_dict['source_mask']])
-        bg_mask = run_dict["source_mask"][:,0].unsqueeze(1)
-        run_dict["cycle_fake_img"] = run_dict['cycle_blend_img'] * (1-bg_mask) + run_dict["source_color"] * bg_mask
-
-        g_pred_fake, feat_fake = self.D(run_dict["cycle_fake_img"], None)
-        feat_real = self.D.get_feature(run_dict["source_color"])
+        run_dict['output'] = self.G(run_dict['source'])
+        g_pred_fake, feat_fake = self.D(run_dict["output"], None)
+        feat_real = self.D.get_feature(run_dict["source"])
 
         run_dict['g_feat_fake'] = feat_fake
         run_dict['g_feat_real'] = feat_real
         run_dict["g_pred_fake"] = g_pred_fake
 
     def run_D(self, run_dict):
-        d_pred_fake, _  = self.D(run_dict['fake_img'].detach(), None)
-        d_pred_real, _  = self.D(run_dict['target_color'], None)
+        d_pred_real, _  = self.D(run_dict['source'], None)
+        d_pred_fake, _  = self.D(run_dict['output'].detach(), None)
         
-        run_dict["d_pred_fake"] = d_pred_fake
         run_dict["d_pred_real"] = d_pred_real
+        run_dict["d_pred_fake"] = d_pred_fake
 
     def do_validation(self):
         self.valid_images = []
@@ -96,24 +80,21 @@ class MyModel(ModelInterface):
         self.loss_collector.loss_dict["valid_L_G"],  self.loss_collector.loss_dict["valid_L_D"] = 0., 0.
         pbar = tqdm(range(len(self.valid_dataloader)), desc='Run validate..')
         for _ in pbar:
-            source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')
+            source, GT = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')
             
-            self.valid_dict["source_color"] = source_color
-            self.valid_dict["source_gray"] = source_gray
-            self.valid_dict["source_mask"] = source_mask
-            self.valid_dict["target_color"] = target_color
-            self.valid_dict["target_gray"] = target_gray
-            self.valid_dict["target_mask"] = target_mask
+            self.valid_dict["source"] = source
+            self.valid_dict["GT"] = GT
 
             with torch.no_grad():
                 self.run_G(self.valid_dict)
                 self.run_D(self.valid_dict)
-                
-                self.loss_collector.loss_dict["valid_L_G"] += (self.loss_collector.get_loss_G(self.valid_dict, valid=True) / len(self.valid_dataloader))
-                self.loss_collector.loss_dict["valid_L_D"] += (self.loss_collector.get_loss_D(self.valid_dict, valid=True) / len(self.valid_dataloader))   
+                            
+            if len(self.valid_images) < 8 : utils.stack_image_grid([self.valid_dict["source"], self.valid_dict["output"], self.valid_dict["GT"]], self.valid_images)
+            self.loss_collector.get_loss_G(self.valid_dict, valid=True)
+            self.loss_collector.get_loss_D(self.valid_dict, valid=True)
             
-            if len(self.valid_images) < 8 : utils.stack_image_grid([self.valid_dict["source_color"], self.valid_dict["target_color"], self.valid_dict["color_map"], self.valid_dict["fake_img"]], self.valid_images)
-            
+        self.loss_collector.loss_dict["valid_L_G"] /= min(len(self.valid_dataloader), 8)
+        self.loss_collector.loss_dict["valid_L_D"] /= min(len(self.valid_dataloader), 8)
         self.loss_collector.val_print_loss()
         
         self.valid_images = torch.cat(self.valid_images, dim=-1)
@@ -126,20 +107,16 @@ class MyModel(ModelInterface):
         
         pbar = tqdm(range(len(self.test_dataloader)), desc='Run test...')
         for _ in pbar:
-            source_color, source_gray, source_mask, target_color, target_gray, target_mask = self.load_next_batch(self.test_dataloader, self.test_iterator, 'test')
+            source, GT = self.load_next_batch(self.test_dataloader, self.test_iterator, 'test')
             
-            self.test_dict["source_color"] = source_color
-            self.test_dict["source_gray"] = source_gray
-            self.test_dict["source_mask"] = source_mask
-            self.test_dict["target_color"] = target_color
-            self.test_dict["target_gray"] = target_gray
-            self.test_dict["target_mask"] = target_mask
+            self.test_dict["source"] = source
+            self.test_dict["GT"] = GT
 
             with torch.no_grad():
                 self.run_G(self.test_dict)
                 self.run_D(self.test_dict)
 
-            utils.stack_image_grid([self.test_dict["source_color"], self.test_dict["target_color"], self.test_dict["color_map"], self.test_dict["fake_img"]], self.test_images)
+            utils.stack_image_grid([self.test_dict["source"], self.test_dict["output"], self.test_dict["GT"]], self.test_images)
         
         self.test_images = torch.cat(self.test_images, dim=-1)
 

@@ -49,7 +49,7 @@ class LossInterface(metaclass=abc.ABCMeta):
         print("")
         print(f"[ {seconds//3600//24:02}d {(seconds//3600)%24:02}h {(seconds//60)%60:02}m {seconds%60:02}s ]")
         print(f"steps: {self.CONFIG['BASE']['GLOBAL_STEP']:06} / {self.CONFIG['BASE']['MAX_STEP']}")
-        print(f"val_lossD: {self.loss_dict['valid_L_D']} | val_lossG: {self.loss_dict['valid_L_G']}")
+        print(f"val_lossD: {round(self.loss_dict['valid_L_D'], 4)} | val_lossG: {round(self.loss_dict['valid_L_G'], 4)}")
 
 
     @abc.abstractmethod

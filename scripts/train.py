@@ -62,7 +62,8 @@ def train(gpu, CONFIG):
 if __name__ == "__main__":
 
     # load config
-    CONFIG = utils.load_yaml("./configs.yaml")
+    # CONFIG = utils.load_yaml("./configs.yaml")
+    CONFIG = utils.load_jsonnet("./configs.jsonnet")
     sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) 
 
     # update configs

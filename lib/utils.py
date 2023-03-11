@@ -6,10 +6,18 @@ import os
 import glob
 
 import os, yaml, json
+import _jsonnet
 
 def print_dict(dict):
     print(json.dumps(dict, sort_keys=True, indent=4))
 
+def load_jsonnet(load_path):
+    return json.loads(_jsonnet.evaluate_file(load_path))
+
+def save_json(save_path, dict):
+    with open(save_path+'json', 'w') as f:
+        json.dump(dict, f, indent=4, sort_keys=True)
+        
 def load_yaml(load_path):
     with open(load_path, 'r') as stream:
         return yaml.load(stream, Loader=yaml.FullLoader)
@@ -77,10 +85,10 @@ def update_net(model, optimizer, loss, use_mGPU=False):
             param.grad.data /= size
     optimizer.step()  
 
-def setup_ddp(gpu, ngpus_per_node):
+def setup_ddp(gpu, ngpus_per_node, PORT):
     torch.distributed.init_process_group(
             backend='nccl',
-            init_method='tcp://127.0.0.1:3456',
+            init_method=f'tcp://127.0.0.1:{PORT}',
             world_size=ngpus_per_node,
             rank=gpu)
 

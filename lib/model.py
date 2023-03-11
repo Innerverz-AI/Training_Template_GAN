@@ -56,12 +56,12 @@ class ModelInterface(metaclass=abc.ABCMeta):
         """
         try:
             batch_data = next(iterator)
-            batch_data = [data.cuda() for data in batch_data]
+            batch_data = batch_data[0].cuda() if len(batch_data) == 1 else [data.cuda() for data in batch_data]
 
         except StopIteration:
             self.__setattr__(mode+'_iterator', iter(dataloader))
             batch_data = next(self.__getattribute__(mode+'_iterator'))
-            batch_data = [data.cuda() for data in batch_data]
+            batch_data = batch_data[0].cuda() if len(batch_data) == 1 else [data.cuda() for data in batch_data]
 
         return batch_data
 
@@ -118,7 +118,7 @@ class ModelInterface(metaclass=abc.ABCMeta):
         pass
 
     def set_multi_GPU(self):
-        utils.setup_ddp(self.CONFIG['BASE']['GPU_ID'], self.CONFIG['BASE']['GPU_NUM'])
+        utils.setup_ddp(self.CONFIG['BASE']['GPU_ID'], self.CONFIG['BASE']['GPU_NUM'], self.CONFIG['BASE']['PORT'])
 
         # Data parallelism is required to use multi-GPU
         self.G = torch.nn.parallel.DistributedDataParallel(self.G, device_ids=[self.CONFIG['BASE']['GPU_ID']], broadcast_buffers=False, find_unused_parameters=True).module

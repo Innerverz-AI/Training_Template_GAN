@@ -21,20 +21,14 @@ class MyDataset(DatasetInterface):
     def __getitem__(self, index):
         
         # you can use random.choice(paths) or random.sample(paths, num)
-        source_color = self.pp_image(self.image_path_list[index])
-        source_gray = self.pp_image(self.image_path_list[index], grayscale=True)
-        source_mask = self.pp_label(self.mask_path_list[index])
+        source = self.pp_image(self.image_path_list[index])
+        # source = self.pp_image(self.image_path_list[index], grayscale=True)
         
         # random_index = self.get_random_index() if random.random() < self.same_prob else index
         random_index = self.get_random_index()
-        target_color = self.pp_image(self.image_path_list[random_index])
-        target_gray = self.pp_image(self.image_path_list[random_index], grayscale=True)
-        target_mask = self.pp_label(self.mask_path_list[random_index])
+        GT = self.pp_image(self.image_path_list[random_index])
 
-        # target_flip = self.pp_image(self.image_path_list[random_index], flip=True)
-        # target_flip_mask = self.pp_label(self.mask_path_list[random_index], flip=True)
-
-        return [source_color, source_gray, source_mask, target_color, target_gray, target_mask]
+        return [source, GT]
 
     def __len__(self):
         return len(self.image_path_list)
@@ -60,28 +54,22 @@ class MyDataset(DatasetInterface):
 
 def divide_datasets(model, CONFIG):
     image_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['IMAGE'])
-    mask_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['MASK'])
     
     if CONFIG['BASE']['DO_VALID']:
         model.train_dataset_dict = {
-                'image_path_list' : image_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']],
-                'mask_path_list' : mask_path_list[ : -1 * CONFIG['DATASET']['VAL_SIZE']]
+                'image_path_list' : image_path_list[ : -1 * CONFIG['BASE']['VAL_SIZE']],
             }  
         model.valid_dataset_dict = {
-                'image_path_list' : image_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ],
-                'mask_path_list' : mask_path_list[-1 * CONFIG['DATASET']['VAL_SIZE'] : ]
+                'image_path_list' : image_path_list[-1 * CONFIG['BASE']['VAL_SIZE'] : ],
             }
 
     else:
         model.train_dataset_dict = {
                 'image_path_list' : image_path_list[ : ],
-                'mask_path_list' : mask_path_list[ : ]
             }
     
     if CONFIG['BASE']['DO_TEST']:
         image_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['IMAGE'])
-        mask_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['MASK'])
         model.test_dataset_dict = {
             'image_path_list' : image_path_list,
-            'mask_path_list' : mask_path_list
         }
