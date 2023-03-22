@@ -15,7 +15,7 @@ def load_jsonnet(load_path):
     return json.loads(_jsonnet.evaluate_file(load_path))
 
 def save_json(save_path, dict):
-    with open(save_path+'json', 'w') as f:
+    with open(save_path+'.jsonnet', 'w') as f:
         json.dump(dict, f, indent=4, sort_keys=True)
         
 def load_yaml(load_path):
