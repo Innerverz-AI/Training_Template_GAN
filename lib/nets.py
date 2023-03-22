@@ -121,7 +121,7 @@ class AdaINResBlock(nn.Module):
         super(AdaINResBlock, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels=in_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, padding_mode='reflect', bias=False)
-        self.AdaIN1 = AdaIN(style_dim, in_c)
+        self.AdaIN1 = AdaIN(style_dim, out_c)
         self.activ1 = nn.LeakyReLU(0.2)
 
         self.conv2 = nn.Conv2d(in_channels=out_c, out_channels=out_c, kernel_size=3, stride=1, padding=1, padding_mode='reflect', bias=False)
