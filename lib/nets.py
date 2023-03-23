@@ -98,14 +98,14 @@ class ResBlock(nn.Module):
 
         feat1 = feat
         feat1 = self.conv1(feat1)
-        feat1 = self.norm1(feat1, style)
+        feat1 = self.norm1(feat1)
         feat1 = self.activ1(feat1)
 
         if self.resize:
             feat1 = F.interpolate(feat1, scale_factor=self.scale_factor, mode='bilinear')
 
         feat1 = self.conv2(feat1)
-        feat1 = self.norm2(feat1, style)
+        feat1 = self.norm2(feat1)
         feat1 = self.activ2(feat1)
 
         # skip connction
