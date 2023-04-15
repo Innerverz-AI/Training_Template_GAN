@@ -38,7 +38,7 @@ def train(gpu, CONFIG):
             # Save image
             if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['IMAGE'] == 0:
                 utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_train.png", model.train_images)
-                utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/latest_train_result.png", model.train_images)
+                utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/_latest_train_result.png", model.train_images)
 
             # Save checkpoint parameters 
             if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['CKPT'] == 0:
@@ -48,13 +48,13 @@ def train(gpu, CONFIG):
                 if CONFIG['BASE']['DO_VALID']:
                     model.do_validation()
                     utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_valid.png", model.valid_images)
-                    utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/latest_valid_result.png", model.valid_images)
+                    utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/_latest_valid_result.png", model.valid_images)
 
             if CONFIG['BASE']['GLOBAL_STEP'] % CONFIG['CYCLE']['TEST'] == 0:
                 if CONFIG['BASE']['DO_TEST']:
                     model.do_test()
                     utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_test.png", model.test_images)
-                    utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/latest_test_result.png", model.test_images)
+                    utils.save_grid_image(f"{CONFIG['BASE']['SAVE_ROOT_IMGS']}/_latest_test_result.png", model.test_images)
 
         CONFIG['BASE']['GLOBAL_STEP'] += 1
 
