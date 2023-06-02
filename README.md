@@ -50,7 +50,7 @@ python scripts/train.py {run_id}
 [x] fix a bug in the calculation of valid loss  
 
 ## Request 
-[ ]
+[ ] G_{str(iter).zfill(8)}, D_{str(iter).zfill(8)}
 
 ## Issues
 ### Error #1
