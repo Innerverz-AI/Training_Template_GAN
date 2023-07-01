@@ -3,16 +3,14 @@
         MODEL_ID: 'CODE_TEMPLATE', 
         USE_MULTI_GPU: false,
         SAME_PROB: 0,
-        BATCH_PER_GPU: 2,
+        BATCH_PER_GPU: 8,
         MAX_STEP: 400000,
         SAVE_ROOT: 'train_results',
         PACKAGES_PATH: '../PACKAGES',
-        DO_TRAIN: true,
-        DO_VALID: true,
-        DO_TEST: false,
         VAL_SIZE: 16,
         IMG_SIZE: 512,
-        PORT: 3456
+        PORT: 3456,
+        RUN_ID: 'test',
     },
 
     # weight of loss
@@ -29,10 +27,9 @@
 
     CYCLE: {
         LOSS: 10,
-        IMAGE: 50,
-        VALID: 50,
-        TEST: 50,
-        CKPT: 1000
+        TRAIN_IMAGE: 50,
+        VALID_IMAGE: 50,
+        CKPT: 1000,
     },
 
     CKPT: {

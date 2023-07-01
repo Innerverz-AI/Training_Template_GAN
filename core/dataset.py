@@ -6,17 +6,16 @@ from torchvision import transforms
 
 
 class MyDataset(DatasetInterface):
-    def __init__(self, CONFIG, mode, dataset_path_list):
+    def __init__(self, CONFIG, dataset_path_list):
         super(MyDataset, self).__init__(CONFIG)
-        self.mode = mode
         self.set_tf()
 
         self.same_prob = CONFIG['BASE']['SAME_PROB']
         
         for name, list in dataset_path_list.items() : self.__setattr__(name, list)
         
-        if CONFIG['BASE']['IS_MASTER']:
-            print(f"Dataset of {self.__len__()} images constructed for the {self.mode}.")
+            
+        self.data_names = ['source', 'GT']
 
     def __getitem__(self, index):
         
@@ -55,21 +54,9 @@ class MyDataset(DatasetInterface):
 def divide_datasets(model, CONFIG):
     image_path_list = utils.get_all_images(CONFIG['DATASET']['TRAIN_PATH']['IMAGE'])
     
-    if CONFIG['BASE']['DO_VALID']:
-        model.train_dataset_dict = {
-                'image_path_list' : image_path_list[ : -1 * CONFIG['BASE']['VAL_SIZE']],
-            }  
-        model.valid_dataset_dict = {
-                'image_path_list' : image_path_list[-1 * CONFIG['BASE']['VAL_SIZE'] : ],
-            }
-
-    else:
-        model.train_dataset_dict = {
-                'image_path_list' : image_path_list[ : ],
-            }
-    
-    if CONFIG['BASE']['DO_TEST']:
-        image_path_list = utils.get_all_images(CONFIG['DATASET']['TEST_PATH']['IMAGE'])
-        model.test_dataset_dict = {
-            'image_path_list' : image_path_list,
+    model.train_dataset_dict = {
+            'image_path_list' : image_path_list[ : -1 * CONFIG['BASE']['VAL_SIZE']],
+        }  
+    model.valid_dataset_dict = {
+            'image_path_list' : image_path_list[-1 * CONFIG['BASE']['VAL_SIZE'] : ],
         }

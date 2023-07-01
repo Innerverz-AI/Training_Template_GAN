@@ -1,7 +1,8 @@
 import abc
 import torch
+import random
 from torch.utils.data import DataLoader
-from MyModel.dataset import divide_datasets, MyDataset 
+from core.dataset import divide_datasets, MyDataset 
 from lib import utils
 import numpy as np
 # from packages import Ranger
@@ -15,10 +16,13 @@ class ModelInterface(metaclass=abc.ABCMeta):
     instantiated but abstract methods were not implemented. 
     """
 
-    def __init__(self, CONFIG):
+    def __init__(self, CONFIG, accelerator):
         """
         When overrided, super call is required.
         """
+        
+        self.accelerator = accelerator
+        
         self.G = None
         self.D = None
         
@@ -29,15 +33,17 @@ class ModelInterface(metaclass=abc.ABCMeta):
         
         self.SetupModel()
 
+    def set_seed(self, seed: int):
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        
     def SetupModel(self):
         
-        self.CONFIG['BASE']['IS_MASTER'] = self.CONFIG['BASE']['GPU_ID'] == 0
-        self.RandomGenerator = np.random.RandomState(42)
+        self.set_seed(42)
         self.declare_networks()
         self.set_optimizers()
-
-        if self.CONFIG['BASE']['USE_MULTI_GPU']:
-            self.set_multi_GPU()
 
         if self.CONFIG['CKPT']['TURN_ON']:
             self.load_checkpoint()
@@ -45,10 +51,19 @@ class ModelInterface(metaclass=abc.ABCMeta):
         divide_datasets(self, self.CONFIG)
         self.set_datasets()
         self.set_loss_collector()
+        
+        self.G, self.D, self.opt_G, self.opt_D, self.train_dataloader, self.valid_dataloader = self.accelerator.prepare(self.G, self.D, self.opt_G, self.opt_D, self.train_dataloader, self.valid_dataloader)
+        self.G = self.G.module
+        self.D = self.D.module
 
-        if self.CONFIG['BASE']['IS_MASTER']:
+        if self.accelerator.is_main_process:
             print(f"Model {self.CONFIG['BASE']['MODEL_ID']} has successively created")
-            
+
+    def update_net(self, optimizer, loss):
+        optimizer.zero_grad()
+        self.accelerator.backward(loss)
+        optimizer.step()
+        
     def load_next_batch(self, dataloader, iterator, mode):
         """
         Load next batch of source image, target image, and boolean values that denote 
@@ -69,17 +84,17 @@ class ModelInterface(metaclass=abc.ABCMeta):
         """
         Initialize dataset using the dataset paths specified in the command line arguments.
         """
-        if self.CONFIG['BASE']['DO_TRAIN']:
-            self.train_dataset = MyDataset(self.CONFIG, 'TRAIN', self.train_dataset_dict)
-            self.set_train_data_iterator()
-            
-        if self.CONFIG['BASE']['DO_VALID']:
-            self.valid_dataset = MyDataset(self.CONFIG, 'VALID', self.valid_dataset_dict)
-            self.set_valid_data_iterator()
-            
-        if self.CONFIG['BASE']['DO_TEST']:
-            self.test_dataset = MyDataset(self.CONFIG, 'TEST', self.test_dataset_dict)
-            self.set_test_data_iterator()
+        self.train_dataset = MyDataset(self.CONFIG, self.train_dataset_dict)
+        self.valid_dataset = MyDataset(self.CONFIG, self.valid_dataset_dict)
+        
+        self.set_train_data_iterator()
+        self.set_valid_data_iterator()
+        
+        self.data_names = self.train_dataset.data_names
+        
+        if self.accelerator.is_main_process:
+            print(f"Dataset of {self.train_dataset.__len__()} images constructed for the TRAIN.")
+            print(f"Dataset of {self.valid_dataset.__len__()} images constructed for the VALID.")
             
     def set_train_data_iterator(self):
         """
@@ -98,14 +113,6 @@ class ModelInterface(metaclass=abc.ABCMeta):
         """
         self.valid_dataloader = DataLoader(self.valid_dataset, batch_size=1, pin_memory=True, drop_last=True)
         self.valid_iterator = iter(self.valid_dataloader)
-        
-    def set_test_data_iterator(self):
-        """
-        Predefine test images only if args.test_dataset_root is specified.
-        These images are anchored for checking the improvement of the model.
-        """
-        self.test_dataloader = DataLoader(self.test_dataset, batch_size=1, pin_memory=True, drop_last=True)
-        self.test_iterator = iter(self.test_dataloader)
 
     @abc.abstractmethod
     def declare_networks(self):
@@ -117,32 +124,55 @@ class ModelInterface(metaclass=abc.ABCMeta):
         """
         pass
 
-    def set_multi_GPU(self):
-        utils.setup_ddp(self.CONFIG['BASE']['GPU_ID'], self.CONFIG['BASE']['GPU_NUM'], self.CONFIG['BASE']['PORT'])
-
-        # Data parallelism is required to use multi-GPU
-        self.G = torch.nn.parallel.DistributedDataParallel(self.G, device_ids=[self.CONFIG['BASE']['GPU_ID']], broadcast_buffers=False, find_unused_parameters=True).module
-        if self.D : self.D = torch.nn.parallel.DistributedDataParallel(self.D, device_ids=[self.CONFIG['BASE']['GPU_ID']]).module
-
     def save_checkpoint(self):
         """
         Save model and optimizer parameters.
         """
-        utils.save_checkpoint(self.CONFIG, self.G, self.opt_G, type='G')
-        if self.D : utils.save_checkpoint(self.CONFIG, self.D, self.opt_D, type='D')
-        
-        if self.CONFIG['BASE']['IS_MASTER']:
+        if self.accelerator.is_main_process:
             print(f"\nCheckpoints are succesively saved in {self.CONFIG['BASE']['SAVE_ROOT']}/{self.CONFIG['BASE']['RUN_ID']}/ckpt/\n")
     
+        ckpt_dict = {}
+        ckpt_dict['global_step'] = self.CONFIG['BASE']['GLOBAL_STEP']
+        
+        ckpt_dict['model'] = self.G.state_dict()
+        ckpt_dict['optimizer'] = self.opt_G.state_dict()
+        torch.save(ckpt_dict, f"{self.CONFIG['BASE']['SAVE_ROOT_CKPT']}/G_{str(self.CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}.pt") # max 99,999,999
+        torch.save(ckpt_dict, f"{self.CONFIG['BASE']['SAVE_ROOT_CKPT']}/G_latest.pt")
+        
+        if self.D:
+            ckpt_dict['model'] = self.D.state_dict()
+            ckpt_dict['optimizer'] = self.opt_D.state_dict()
+            torch.save(ckpt_dict, f"{self.CONFIG['BASE']['SAVE_ROOT_CKPT']}/D_{str(self.CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}.pt") # max 99,999,999
+            torch.save(ckpt_dict, f"{self.CONFIG['BASE']['SAVE_ROOT_CKPT']}/D_latest.pt")
+            
     def load_checkpoint(self):
         """
         Load pretrained parameters from checkpoint to the initialized models.
         """
-        self.CONFIG['BASE']['GLOBAL_STEP'] = \
-        utils.load_checkpoint(self.CONFIG, self.G, self.opt_G, type="G")
-        if self.D : utils.load_checkpoint(self.CONFIG, self.D, self.opt_D, type="D")
+        FLAG = False 
+        for run_id in os.listdir('./train_results'):
+            if int(run_id[:3]) == self.CONFIG['CKPT']['ID_NUM']:
+                self.CONFIG['CKPT']['ID'] = run_id
+                FLAG = True
 
-        if self.CONFIG['BASE']['IS_MASTER']:
+        assert FLAG, 'ID_NUM is wrong'
+
+        ckpt_step = "latest" if self.CONFIG['CKPT']['STEP'] is None else str(self.CONFIG['CKPT']['STEP']).zfill(8)
+        
+        ckpt_path_G = f"{self.CONFIG['BASE']['SAVE_ROOT']}/{self.CONFIG['CKPT']['ID']}/ckpt/G_{ckpt_step}.pt"
+        ckpt_dict_G = torch.load(ckpt_path_G, map_location=torch.device('cuda'))
+        self.G.load_state_dict(ckpt_dict_G['model'], strict=False)
+        self.opt_G.load_state_dict(ckpt_dict_G['optimizer'])
+        
+        if self.D:
+            ckpt_path_D = f"{self.CONFIG['BASE']['SAVE_ROOT']}/{self.CONFIG['CKPT']['ID']}/ckpt/D_{ckpt_step}.pt"
+            ckpt_dict_D = torch.load(ckpt_path_D, map_location=torch.device('cuda'))
+            self.D.load_state_dict(ckpt_dict_D['model'], strict=False)
+            self.opt_D.load_state_dict(ckpt_dict_D['optimizer'])
+        
+        self.CONFIG['BASE']['GLOBAL_STEP'] = ckpt_dict_G['global_step']
+
+        if self.accelerator.is_main_process:
             print(f"Pretrained parameters are succesively loaded from {self.CONFIG['BASE']['SAVE_ROOT']}/{self.CONFIG['CKPT']['ID']}/ckpt/")
 
     def set_optimizers(self):

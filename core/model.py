@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from lib import utils
 from lib.model import ModelInterface
 from lib.discriminators import ProjectedDiscriminator
-from MyModel.loss import MyModelLoss
-from MyModel.nets import MyGenerator
+from core.loss import MyModelLoss
+from core.nets import MyGenerator
 
 class MyModel(ModelInterface):
     def declare_networks(self):
@@ -16,8 +16,8 @@ class MyModel(ModelInterface):
         self.set_networks_train_mode()
 
         # PACKAGES
-        from id_extractor import IdExtractor
-        self.IE = IdExtractor()
+        # from id_extractor import IdExtractor
+        # self.IE = IdExtractor()
 
     def set_networks_train_mode(self):
         self.G.train()
@@ -30,24 +30,24 @@ class MyModel(ModelInterface):
         self.D.eval()
 
     def go_step(self):
-        source, GT = self.load_next_batch(self.train_dataloader, self.train_iterator, 'train')
+        batch_data_bundle = self.load_next_batch(self.train_dataloader, self.train_iterator, 'train')
         
-        self.train_dict["source"] = source
-        self.train_dict["GT"] = GT
+        for data_name, batch_data in zip(self.data_names, batch_data_bundle):
+            self.train_dict[data_name] = batch_data
 
         # run G
         self.run_G(self.train_dict)
 
         # update G
         loss_G = self.loss_collector.get_loss_G(self.train_dict)
-        utils.update_net(self.G, self.opt_G, loss_G, self.CONFIG['BASE']['USE_MULTI_GPU'])
+        self.update_net(self.opt_G, loss_G)
 
         # run D
         self.run_D(self.train_dict)
 
         # update D
         loss_D = self.loss_collector.get_loss_D(self.train_dict)
-        utils.update_net(self.D, self.opt_D, loss_D, self.CONFIG['BASE']['USE_MULTI_GPU'])
+        self.update_net(self.opt_D, loss_D)
         
         # print images
         self.train_images = [
@@ -80,11 +80,12 @@ class MyModel(ModelInterface):
         self.loss_collector.loss_dict["valid_L_G"],  self.loss_collector.loss_dict["valid_L_D"] = 0., 0.
         pbar = tqdm(range(len(self.valid_dataloader)), desc='Run validate..')
         for _ in pbar:
-            source, GT = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')
             
-            self.valid_dict["source"] = source
-            self.valid_dict["GT"] = GT
-
+            batch_data_bundle = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')
+                
+            for data_name, batch_data in zip(self.data_names, batch_data_bundle):
+                self.valid_dict[data_name] = batch_data
+            
             with torch.no_grad():
                 self.run_G(self.valid_dict)
                 self.run_D(self.valid_dict)
@@ -101,31 +102,9 @@ class MyModel(ModelInterface):
 
         self.set_networks_train_mode()
         
-    def do_test(self):
-        self.test_images = []
-        self.set_networks_eval_mode()
-        
-        pbar = tqdm(range(len(self.test_dataloader)), desc='Run test...')
-        for _ in pbar:
-            source, GT = self.load_next_batch(self.test_dataloader, self.test_iterator, 'test')
-            
-            self.test_dict["source"] = source
-            self.test_dict["GT"] = GT
-
-            with torch.no_grad():
-                self.run_G(self.test_dict)
-                self.run_D(self.test_dict)
-
-            utils.stack_image_grid([self.test_dict["source"], self.test_dict["output"], self.test_dict["GT"]], self.test_images)
-        
-        self.test_images = torch.cat(self.test_images, dim=-1)
-
-        self.set_networks_train_mode()
-
     @property
     def loss_collector(self):
         return self._loss_collector
-
 
     def set_loss_collector(self):
         self._loss_collector = MyModelLoss(self.CONFIG)        

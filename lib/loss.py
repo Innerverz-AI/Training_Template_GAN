@@ -4,8 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import time
 import torchvision
-import wandb
-import torchvision
 import lpips # pip install lpips
 
 class LossInterface(metaclass=abc.ABCMeta):
@@ -26,11 +24,6 @@ class LossInterface(metaclass=abc.ABCMeta):
         self.loss_dict['L_D'] = .0
         self.loss_dict['valid_L_G'] = .0
         self.loss_dict['valid_L_D'] = .0
-        
-
-    def log_wandb(self):
-        if self.CONFIG['WANDB']['TURN_ON']:
-            wandb.log(self.loss_dict)
 
     def print_loss(self):
         """
@@ -88,7 +81,7 @@ class Loss:
     def get_lpips_loss(cls, a, b):
         if not hasattr(cls, 'lpips'):
             cls.lpips = lpips.LPIPS(net='vgg').eval().to("cuda")
-        return cls.lpips(a, b)
+        return cls.lpips(a, b).mean()
 
     @classmethod
     def get_vgg_loss(cls, a, b):

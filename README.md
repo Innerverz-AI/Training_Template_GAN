@@ -2,6 +2,8 @@
 
 ```
 python scripts/train.py {run_id}
+accelerate config
+accelerate launch scripts/train.py
 ```
 
 ## Release Note
