@@ -1,7 +1,7 @@
 import abc
 import torch
 from torch.utils.data import DataLoader
-from MyModel.dataset import divide_datasets, MyDataset 
+from core.dataset import divide_datasets, MyDataset 
 from lib import utils
 import numpy as np
 # from packages import Ranger

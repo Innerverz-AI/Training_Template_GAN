@@ -88,7 +88,7 @@ class Loss:
     def get_lpips_loss(cls, a, b):
         if not hasattr(cls, 'lpips'):
             cls.lpips = lpips.LPIPS(net='vgg').eval().to("cuda")
-        return cls.lpips(a, b)
+        return cls.lpips(a, b).mean()
 
     @classmethod
     def get_vgg_loss(cls, a, b):

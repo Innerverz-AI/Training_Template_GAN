@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from lib import utils
 from lib.model import ModelInterface
 from lib.discriminators import ProjectedDiscriminator
-from MyModel.loss import MyModelLoss
-from MyModel.nets import MyGenerator
+from core.loss import MyModelLoss
+from core.nets import MyGenerator
 
 class MyModel(ModelInterface):
     def declare_networks(self):
@@ -15,9 +15,9 @@ class MyModel(ModelInterface):
         
         self.set_networks_train_mode()
 
-        # PACKAGES
-        from id_extractor import IdExtractor
-        self.IE = IdExtractor()
+        # # PACKAGES
+        # from id_extractor import IdExtractor
+        # self.IE = IdExtractor()
 
     def set_networks_train_mode(self):
         self.G.train()

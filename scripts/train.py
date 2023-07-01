@@ -3,7 +3,7 @@ import sys
 sys.path.append("./")
 sys.path.append('./lib/discriminators/')
 from lib import utils
-from MyModel.model import MyModel
+from core.model import MyModel
 import torch
 import wandb
 from distutils import dir_util
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     utils.make_dirs(CONFIG)
     utils.print_dict(CONFIG)
     utils.save_json(f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}", CONFIG)
-    dir_util.copy_tree("./MyModel", CONFIG['BASE']['SAVE_ROOT_CODE'])
+    dir_util.copy_tree("./core", CONFIG['BASE']['SAVE_ROOT_CODE'])
 
     # Set up multi-GPU training
     if CONFIG['BASE']['USE_MULTI_GPU']:
