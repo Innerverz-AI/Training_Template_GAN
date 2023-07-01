@@ -137,6 +137,6 @@ def save_checkpoint(CONFIG, model, optimizer, type):
     ckpt_dict['model'] = model.state_dict()
     ckpt_dict['optimizer'] = optimizer.state_dict()
 
-    torch.save(ckpt_dict, f"{CONFIG['BASE']['SAVE_ROOT_CKPT']}/{type}_{CONFIG['BASE']['GLOBAL_STEP']}.pt")
+    torch.save(ckpt_dict, f"{CONFIG['BASE']['SAVE_ROOT_CKPT']}/{type}_{str(CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}.pt") # max 99,999,999
     torch.save(ckpt_dict, f"{CONFIG['BASE']['SAVE_ROOT_CKPT']}/{type}_latest.pt")
         

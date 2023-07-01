@@ -6,6 +6,7 @@ import time
 import torchvision
 import wandb
 import torchvision
+import lpips # pip install lpips
 
 class LossInterface(metaclass=abc.ABCMeta):
     """
@@ -86,7 +87,7 @@ class Loss:
     @classmethod
     def get_lpips_loss(cls, a, b):
         if not hasattr(cls, 'lpips'):
-            cls.lpips = LPIPS().eval().to("cuda")
+            cls.lpips = lpips.LPIPS(net='vgg').eval().to("cuda")
         return cls.lpips(a, b)
 
     @classmethod

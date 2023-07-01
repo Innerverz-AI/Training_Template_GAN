@@ -43,15 +43,20 @@ python scripts/train.py {run_id}
 [x] delete sampler of valid dataloader   
 [x] sys.path.append(CONFIG['BASE']['PACKAGES_PATH']) @scripts/trian.py 
 
-### 23.03.12
+### 23.03.12  
 [x] error occurs when the Dataset returns only one variable.     
 [x] replace config with jsonnet  
 [x] add ddp port num to config file  
 [x] fix a bug in the calculation of valid loss  
 
-## Request 
-[ ] G_{str(iter).zfill(8)}, D_{str(iter).zfill(8)}
+### 23.07.01  
+[x] G_{str(iter).zfill(8)}, D_{str(iter).zfill(8)}    
+[x] use lpips library    
+[x] rename 'MyModel' to 'core'    
 
+## Request   
+[]  
+  
 ## Issues
 ### Error #1
 AttributeError: 'EfficientNet' object has no attribute 'act1'   
