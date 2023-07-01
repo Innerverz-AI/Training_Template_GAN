@@ -1,7 +1,7 @@
 {
     BASE: {
         MODEL_ID: 'CODE_TEMPLATE', 
-        USE_MULTI_GPU: false,
+        USE_MULTI_GPU: true,
         SAME_PROB: 0,
         BATCH_PER_GPU: 8,
         MAX_STEP: 400000,
