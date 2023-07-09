@@ -14,9 +14,6 @@ class MyDataset(DatasetInterface):
         
         for name, list in dataset_path_list.items() : self.__setattr__(name, list)
         
-            
-        self.data_names = ['source', 'GT']
-
     def __getitem__(self, index):
         
         # you can use random.choice(paths) or random.sample(paths, num)

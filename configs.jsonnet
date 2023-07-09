@@ -1,15 +1,13 @@
 {
     BASE: {
         MODEL_ID: 'CODE_TEMPLATE', 
-        USE_MULTI_GPU: true,
         SAME_PROB: 0,
-        BATCH_PER_GPU: 8,
+        BATCH_PER_GPU: 2,
         MAX_STEP: 400000,
         SAVE_ROOT: 'train_results',
         PACKAGES_PATH: '../PACKAGES',
         VAL_SIZE: 16,
         IMG_SIZE: 512,
-        PORT: 3456,
         RUN_ID: 'test',
     },
 
@@ -46,7 +44,6 @@
         ALERT_THRES: 1000,
     },
 
-
     OPTIMIZER: {
         TYPE: 'Adam', # [Ranger, Adam]
         BETA: [0.0, 0.999], # default: Adam (0.9, 0.999) / Ranger (0.95, 0.999)
@@ -58,7 +55,7 @@
         TRAIN_PATH:{
             IMAGE:
                 [
-                    '/data1/face-datasets/ffhq70k',
+                    '/media/deep3090/hdd/DATASET/FACE_DATASET/ffhq70k',
                 ],
         },
 

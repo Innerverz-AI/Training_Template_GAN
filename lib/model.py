@@ -6,6 +6,7 @@ from core.dataset import divide_datasets, MyDataset
 from lib import utils
 import numpy as np
 # from packages import Ranger
+from tqdm import tqdm
 import glob
 
 class ModelInterface(metaclass=abc.ABCMeta):
@@ -90,8 +91,6 @@ class ModelInterface(metaclass=abc.ABCMeta):
         self.set_train_data_iterator()
         self.set_valid_data_iterator()
         
-        self.data_names = self.train_dataset.data_names
-        
         if self.accelerator.is_main_process:
             print(f"Dataset of {self.train_dataset.__len__()} images constructed for the TRAIN.")
             print(f"Dataset of {self.valid_dataset.__len__()} images constructed for the VALID.")
@@ -102,8 +101,8 @@ class ModelInterface(metaclass=abc.ABCMeta):
         Using self.dataset and sampler, construct dataloader.
         Store Iterator from dataloader as a member variable.
         """
-        sampler = torch.utils.data.distributed.DistributedSampler(self.train_dataset) if self.CONFIG['BASE']['USE_MULTI_GPU'] else None
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.CONFIG['BASE']['BATCH_PER_GPU'], pin_memory=True, sampler=sampler, num_workers=8, drop_last=True)
+        # sampler = torch.utils.data.distributed.DistributedSampler(self.train_dataset) if self.CONFIG['BASE']['USE_MULTI_GPU'] else None
+        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.CONFIG['BASE']['BATCH_PER_GPU'], pin_memory=True, num_workers=8, drop_last=True)
         self.train_iterator = iter(self.train_dataloader)
 
     def set_valid_data_iterator(self):
@@ -217,3 +216,33 @@ class ModelInterface(metaclass=abc.ABCMeta):
         This method includes util.save_image and returns nothing.
         """
         pass
+    
+    def do_validation(self):
+        self.valid_images = []
+        self.set_networks_eval_mode()
+
+        self.loss_collector.loss_dict["valid_L_G"],  self.loss_collector.loss_dict["valid_L_D"] = 0., 0.
+        pbar = tqdm(range(len(self.valid_dataloader)), desc='Run validate..')
+        for _ in pbar:
+            
+            batch_data_bundle = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')
+                
+            for data_name, batch_data in zip(self.batch_data_names, batch_data_bundle):
+                self.valid_dict[data_name] = batch_data
+            
+            with torch.no_grad():
+                self.run_G(self.valid_dict)
+                self.run_D(self.valid_dict)
+                self.loss_collector.get_loss_G(self.valid_dict, valid=True)
+                self.loss_collector.get_loss_D(self.valid_dict, valid=True)
+                            
+            if len(self.valid_images) < 8 : utils.stack_image_grid([self.valid_dict[data_name] for data_name in self.saving_data_names], self.valid_images)
+            
+        self.loss_collector.loss_dict["valid_L_G"] /= len(self.valid_dataloader)
+        self.loss_collector.loss_dict["valid_L_D"] /= len(self.valid_dataloader)
+        self.loss_collector.val_print_loss()
+        
+        self.valid_images = torch.cat(self.valid_images, dim=-1)
+
+        self.set_networks_train_mode()
+        

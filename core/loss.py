@@ -30,9 +30,9 @@ class MyModelLoss(LossInterface):
             self.loss_dict["L_lpips"] = round(L_lpips.item(),4)
             
         if self.CONFIG['LOSS']['W_L1']:
-            L_recon = Loss.get_L1_loss(run_dict["fake_img"], run_dict["target"])
-            L_G += self.CONFIG['LOSS']['W_RECON'] * L_recon
-            self.loss_dict["L_recon"] = round(L_recon.item(), 4)
+            L_L1 = Loss.get_L1_loss(run_dict["fake_img"], run_dict["target"])
+            L_G += self.CONFIG['LOSS']['W_L1'] * L_L1
+            self.loss_dict["L_L1"] = round(L_L1.item(), 4)
 
         if self.CONFIG['LOSS']['W_RECON']:
             L_recon = Loss.get_L1_loss(run_dict["fake_img"], run_dict["target"])

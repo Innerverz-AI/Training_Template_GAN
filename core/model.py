@@ -1,4 +1,3 @@
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -30,9 +29,12 @@ class MyModel(ModelInterface):
         self.D.eval()
 
     def go_step(self):
+        self.batch_data_names = ['source', 'GT']
+        self.saving_data_names = ['source', 'GT', 'output']
+        
         batch_data_bundle = self.load_next_batch(self.train_dataloader, self.train_iterator, 'train')
         
-        for data_name, batch_data in zip(self.data_names, batch_data_bundle):
+        for data_name, batch_data in zip(self.batch_data_names, batch_data_bundle):
             self.train_dict[data_name] = batch_data
 
         # run G
@@ -50,11 +52,7 @@ class MyModel(ModelInterface):
         self.update_net(self.opt_D, loss_D)
         
         # print images
-        self.train_images = [
-            self.train_dict["source"],
-            self.train_dict["output"],
-            self.train_dict["GT"],
-            ]
+        self.train_images = [self.train_dict[data_name] for data_name in self.saving_data_names]
 
     def run_G(self, run_dict):
         # with torch.no_grad():
@@ -73,35 +71,6 @@ class MyModel(ModelInterface):
         run_dict["d_pred_real"] = d_pred_real
         run_dict["d_pred_fake"] = d_pred_fake
 
-    def do_validation(self):
-        self.valid_images = []
-        self.set_networks_eval_mode()
-
-        self.loss_collector.loss_dict["valid_L_G"],  self.loss_collector.loss_dict["valid_L_D"] = 0., 0.
-        pbar = tqdm(range(len(self.valid_dataloader)), desc='Run validate..')
-        for _ in pbar:
-            
-            batch_data_bundle = self.load_next_batch(self.valid_dataloader, self.valid_iterator, 'valid')
-                
-            for data_name, batch_data in zip(self.data_names, batch_data_bundle):
-                self.valid_dict[data_name] = batch_data
-            
-            with torch.no_grad():
-                self.run_G(self.valid_dict)
-                self.run_D(self.valid_dict)
-                self.loss_collector.get_loss_G(self.valid_dict, valid=True)
-                self.loss_collector.get_loss_D(self.valid_dict, valid=True)
-                            
-            if len(self.valid_images) < 8 : utils.stack_image_grid([self.valid_dict["source"], self.valid_dict["output"], self.valid_dict["GT"]], self.valid_images)
-            
-        self.loss_collector.loss_dict["valid_L_G"] /= len(self.valid_dataloader)
-        self.loss_collector.loss_dict["valid_L_D"] /= len(self.valid_dataloader)
-        self.loss_collector.val_print_loss()
-        
-        self.valid_images = torch.cat(self.valid_images, dim=-1)
-
-        self.set_networks_train_mode()
-        
     @property
     def loss_collector(self):
         return self._loss_collector
