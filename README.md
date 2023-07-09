@@ -3,15 +3,18 @@
 ```
 pip install accelerate 
 
+# setting
+"""
+In which compute environment are you running? ➔ This machine
+Which type of machine are you using? ➔ Multi-GPU
+Do you wish to optimize your script with torch dynamo? [yes/NO] ➔ Enter
+Do you want to use DeepSpeed? [yes/NO] ➔ Enter
+What GPU(s) (by id) should be used for training on this machine as a comma-seperated list? [all] ➔ Enter
+Do you wish to use FP16 or BF16 (mixed precision)? ➔ Enter
+"""
 accelerate config
-# In which compute environment are you running? ➔ This machine
-# Which type of machine are you using? ➔ No distributed training or Multi-GPU
-# Do you wish to optimize your script with torch dynamo? [yes/NO] ➔ Enter
-# Do you want to use DeepSpeed? [yes/NO] ➔ Enter
-# What GPU(s) (by id) should be used for training on this machine as a comma-seperated list? [all] ➔ Enter
-# Do you wish to use FP16 or BF16 (mixed precision)? ➔ Enter
 
-# 위에서 설정한 GPU개수에 맞게 gpu_ids를 적어줌
+# run
 accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process_port=3456 scripts/train.py
 ```
 - run_id는 configs.jsonnet에서 수정해야함 
