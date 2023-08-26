@@ -1,5 +1,9 @@
 # INVZ Code Template
 
+## Usage
+
+### install accelerate and set initial configs
+
 ```
 pip install accelerate 
 
@@ -17,10 +21,20 @@ accelerate config
 # run
 accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process_port=3456 scripts/train.py
 ```
-- run_id는 configs.jsonnet에서 수정해야함 
-- core.model의 go_step method에서 self.batch_data_names와 saving_data_names를 설정해야 함
-- self.batch_data_names는 core.dataset.MyDataset의 get_item method의 return하는 항목들과 동일해야 함(데이터 타입은 str로 변경)
-- 'Unable to find a valid cuDNN algorithm to run convolution' 에러가 나는 경우 batch size를 줄여보자
+
+### note
+- modify the run_id in the configs.jsonnet file.
+- configure the saving_data_names in the core.model.__init__.
+
+## Issues
+### Error type 1
+- AttributeError: 'EfficientNet' object has no attribute 'act1'   
+- If you face an error above, do this >> pip install timm==0.5.4     
+- ref: https://github.com/autonomousvision/projected_gan/issues/88    
+
+### Error type 2
+- 'Unable to find a valid cuDNN algorithm to run convolution'
+- try reducing the batch size.
 
 ## Release Note
 
@@ -86,6 +100,3 @@ accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process
   
 ## Issues
 ### Error #1
-AttributeError: 'EfficientNet' object has no attribute 'act1'   
-If you face an error above, do this >> pip install timm==0.5.4     
-ref: https://github.com/autonomousvision/projected_gan/issues/88    
