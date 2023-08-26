@@ -12,12 +12,14 @@ warnings.filterwarnings("ignore")
 def train():
     accelerator = Accelerator(log_with="wandb")
     CONFIG = utils.load_jsonnet("./configs.jsonnet")
-
-    if accelerator.is_main_process:
-        CONFIG = utils.prepare_training()
+    utils.prepare_training(CONFIG, accelerator.is_main_process)
 
     model = MyModel(CONFIG, accelerator)
-    model.accelerator.init_trackers(CONFIG["BASE"]["MODEL_ID"], config=CONFIG)
+    model.accelerator.init_trackers(
+        CONFIG["BASE"]["MODEL_ID"],
+        config=CONFIG,
+        init_kwargs={"wandb": {"name": CONFIG["BASE"]["RUN_ID"]}},
+    )
 
     while CONFIG["BASE"]["GLOBAL_STEP"] < CONFIG["BASE"]["MAX_STEP"]:
         model.go_step()

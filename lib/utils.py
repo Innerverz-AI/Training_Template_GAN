@@ -6,59 +6,80 @@ import glob
 import os, yaml, json
 import _jsonnet
 from distutils import dir_util
+import numpy as np
+import random
 
-def prepare_training(CONFIG):    
 
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def prepare_training(CONFIG, is_main_process):
+    set_seed(42)
     CONFIG["BASE"]["GLOBAL_STEP"] = 0
     CONFIG["BASE"]["GPU_NUM"] = torch.cuda.device_count()
 
-    make_dirs(CONFIG)
-    print_dict(CONFIG)
-    save_json(
-        f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}",
-        CONFIG,
-    )
-    dir_util.copy_tree("./core", CONFIG['BASE']['SAVE_ROOT_CODE'])
-    
+    if is_main_process:
+        make_dirs(CONFIG)
+        print_dict(CONFIG)
+        save_json(
+            f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}",
+            CONFIG,
+        )
+        dir_util.copy_tree("./core", CONFIG["BASE"]["SAVE_ROOT_CODE"])
+
 
 def print_dict(dict):
     print(json.dumps(dict, sort_keys=True, indent=4))
 
+
 def load_jsonnet(load_path):
     return json.loads(_jsonnet.evaluate_file(load_path))
 
+
 def save_json(save_path, dict):
-    with open(save_path+'.jsonnet', 'w') as f:
+    with open(save_path + ".jsonnet", "w") as f:
         json.dump(dict, f, indent=4, sort_keys=True)
-        
+
+
 def load_yaml(load_path):
-    with open(load_path, 'r') as stream:
+    with open(load_path, "r") as stream:
         return yaml.load(stream, Loader=yaml.FullLoader)
 
+
 def save_yaml(save_path, dict):
-    with open(save_path, 'w') as f:
+    with open(save_path, "w") as f:
         yaml.dump(dict, f)
 
-def make_dirs(CONFIG):
-    os.makedirs(CONFIG['BASE']['SAVE_ROOT'], exist_ok=True)
 
-    train_result_dirs = os.listdir(CONFIG['BASE']['SAVE_ROOT'])
+def make_dirs(CONFIG):
+    os.makedirs(CONFIG["BASE"]["SAVE_ROOT"], exist_ok=True)
+
+    train_result_dirs = os.listdir(CONFIG["BASE"]["SAVE_ROOT"])
     if train_result_dirs:
         last_train_index = sorted(train_result_dirs)[-1][:3]
-        CONFIG['BASE']['RUN_ID'] = f"{str(int(last_train_index)+1).zfill(3)}_{CONFIG['BASE']['RUN_ID']}"
-    
+        CONFIG["BASE"][
+            "RUN_ID"
+        ] = f"{str(int(last_train_index)+1).zfill(3)}_{CONFIG['BASE']['RUN_ID']}"
+
     else:
-        CONFIG['BASE']['RUN_ID'] = f"000_{CONFIG['BASE']['RUN_ID']}"    
+        CONFIG["BASE"]["RUN_ID"] = f"000_{CONFIG['BASE']['RUN_ID']}"
 
-    CONFIG['BASE']['SAVE_ROOT_RUN'] = f"{CONFIG['BASE']['SAVE_ROOT']}/{CONFIG['BASE']['RUN_ID']}"
-    os.makedirs(CONFIG['BASE']['SAVE_ROOT_RUN'], exist_ok=True)
+    CONFIG["BASE"][
+        "SAVE_ROOT_RUN"
+    ] = f"{CONFIG['BASE']['SAVE_ROOT']}/{CONFIG['BASE']['RUN_ID']}"
+    os.makedirs(CONFIG["BASE"]["SAVE_ROOT_RUN"], exist_ok=True)
 
-    CONFIG['BASE']['SAVE_ROOT_CKPT'] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/ckpt"
-    CONFIG['BASE']['SAVE_ROOT_IMGS'] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/imgs"
-    CONFIG['BASE']['SAVE_ROOT_CODE'] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/code"
-    os.makedirs(CONFIG['BASE']['SAVE_ROOT_CKPT'], exist_ok=True)
-    os.makedirs(CONFIG['BASE']['SAVE_ROOT_IMGS'], exist_ok=True)
-    os.makedirs(CONFIG['BASE']['SAVE_ROOT_CODE'], exist_ok=True)
+    CONFIG["BASE"]["SAVE_ROOT_CKPT"] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/ckpt"
+    CONFIG["BASE"]["SAVE_ROOT_IMGS"] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/imgs"
+    CONFIG["BASE"]["SAVE_ROOT_CODE"] = f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/code"
+    os.makedirs(CONFIG["BASE"]["SAVE_ROOT_CKPT"], exist_ok=True)
+    os.makedirs(CONFIG["BASE"]["SAVE_ROOT_IMGS"], exist_ok=True)
+    os.makedirs(CONFIG["BASE"]["SAVE_ROOT_CODE"], exist_ok=True)
+
 
 def get_all_images(dataset_root_list, sorting=True):
     image_paths = []
@@ -74,20 +95,23 @@ def get_all_images(dataset_root_list, sorting=True):
     else:
         return image_paths
 
+
 def requires_grad(model, flag=True):
     for p in model.parameters():
         p.requires_grad = flag
-        
+
+
 def weight_init(m):
     if isinstance(m, nn.Linear):
         m.weight.data.normal_(0, 0.001)
         m.bias.data.zero_()
-        
+
     if isinstance(m, nn.Conv2d):
         nn.init.xavier_normal_(m.weight.data)
 
     if isinstance(m, nn.ConvTranspose2d):
         nn.init.xavier_normal_(m.weight.data)
+
 
 def make_grid_image(images_list):
     grid_rows = []
@@ -98,11 +122,11 @@ def make_grid_image(images_list):
         grid_rows.append(grid_row)
 
     grid = torch.cat(grid_rows, dim=1)
-    grid = grid.detach().cpu().numpy().transpose([1,2,0]) * 255
+    grid = grid.detach().cpu().numpy().transpose([1, 2, 0]) * 255
     return grid
 
-    
-def stack_image_grid(batch_data_items : list, target_image : list):
+
+def stack_image_grid(batch_data_items: list, target_image: list):
     column = []
     for item in batch_data_items:
         column.append(item)

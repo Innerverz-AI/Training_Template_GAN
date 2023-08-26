@@ -6,7 +6,7 @@
         MAX_STEP: 400000,
         SAVE_ROOT: 'train_results',
         PACKAGES_PATH: '../PACKAGES',
-        VAL_SIZE: 16,
+        VAL_SIZE: 64,
         IMG_SIZE: 512,
         RUN_ID: 'test',
     },
@@ -14,6 +14,7 @@
     # weight of loss
     LOSS: {
         W_ADV: 1,
+        W_ID: 0,
         W_VGG: 0,
         W_L1: 0,
         W_RECON: 0,
@@ -51,18 +52,9 @@
     },
 
     DATASET: {
-        TRAIN_PATH:{
-            IMAGE:
-                [
-                    '/data1/PUBLIC/ffhq70k/',
-                ],
-        },
-
-        TEST_PATH:{
-            IMAGE:
-                [
-                    './assets/images'
-                ]
-        }
+        IMAGE:
+            [
+                '/data1/PUBLIC/ffhq70k/',
+            ],
     },
 }
