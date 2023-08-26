@@ -22,17 +22,17 @@ accelerate config
 accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process_port=3456 scripts/train.py
 ```
 
-### note
+### before training
 - modify the run_id in the configs.jsonnet file.
 - configure the saving_data_names in the core.model.__init__.
 
 ## Issues
-### Error type 1
+### #1
 - AttributeError: 'EfficientNet' object has no attribute 'act1'   
 - If you face an error above, do this >> pip install timm==0.5.4     
 - ref: https://github.com/autonomousvision/projected_gan/issues/88    
 
-### Error type 2
+### #2
 - 'Unable to find a valid cuDNN algorithm to run convolution'
 - try reducing the batch size.
 
@@ -87,13 +87,13 @@ accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process
 [x] rename 'MyModel' to 'core'    
 
 ### 23.08.26  
-[x] change conditional statements: 'W_VGG' in self.CONFIG['LOSS'] --> if self.CONFIG['LOSS']['W_VGG'] 
-[x] change image saving funtion: from PIL.Image.save to cv2.imwrite
-[x] change return type of DATASET from list to dictionary 
-[x] change related paths in lib.discriminators.pg_modules
-[x] format the code using 'black' # black your_file.py / black your_dir
-[x] modify lib/model.py, core/model.py, scripts/train.py
-[x] add RUN_ID to accelerator.tracker
+[x] change conditional statements: 'W_VGG' in self.CONFIG['LOSS'] --> if self.CONFIG['LOSS']['W_VGG']   
+[x] change image saving funtion: from PIL.Image.save to cv2.imwrite  
+[x] change return type of DATASET from list to dictionary   
+[x] change related paths in lib.discriminators.pg_modules  
+[x] format the code using 'black' # black your_file.py / black your_dir  
+[x] modify lib/model.py, core/model.py, scripts/train.py  
+[x] add RUN_ID to accelerator.tracker  
 
 ## Request   
 []  
