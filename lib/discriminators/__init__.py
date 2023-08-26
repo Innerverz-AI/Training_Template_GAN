@@ -1,1 +1,2 @@
-from pg_modules.projected_discriminator import ProjectedDiscriminator
+from .pg_modules.projected_discriminator import ProjectedDiscriminator
+

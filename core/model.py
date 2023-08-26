@@ -37,17 +37,11 @@ class MyModel(ModelInterface):
         for data_name, batch_data in zip(self.batch_data_names, batch_data_bundle):
             self.train_dict[data_name] = batch_data
 
-        # run G
         self.run_G(self.train_dict)
-
-        # update G
         loss_G = self.loss_collector.get_loss_G(self.train_dict)
         self.update_net(self.opt_G, loss_G)
 
-        # run D
         self.run_D(self.train_dict)
-
-        # update D
         loss_D = self.loss_collector.get_loss_D(self.train_dict)
         self.update_net(self.opt_D, loss_D)
         

@@ -1,13 +1,25 @@
 import torch
 import torch.nn as nn
 import torchvision
-import cv2
 import os
 import glob
-import numpy as np
-from PIL import Image
 import os, yaml, json
 import _jsonnet
+from distutils import dir_util
+
+def prepare_training(CONFIG):    
+
+    CONFIG["BASE"]["GLOBAL_STEP"] = 0
+    CONFIG["BASE"]["GPU_NUM"] = torch.cuda.device_count()
+
+    make_dirs(CONFIG)
+    print_dict(CONFIG)
+    save_json(
+        f"{CONFIG['BASE']['SAVE_ROOT_RUN']}/config_{CONFIG['BASE']['RUN_ID']}",
+        CONFIG,
+    )
+    dir_util.copy_tree("./core", CONFIG['BASE']['SAVE_ROOT_CODE'])
+    
 
 def print_dict(dict):
     print(json.dumps(dict, sort_keys=True, indent=4))
@@ -48,7 +60,7 @@ def make_dirs(CONFIG):
     os.makedirs(CONFIG['BASE']['SAVE_ROOT_IMGS'], exist_ok=True)
     os.makedirs(CONFIG['BASE']['SAVE_ROOT_CODE'], exist_ok=True)
 
-def get_all_images(dataset_root_list):
+def get_all_images(dataset_root_list, sorting=True):
     image_paths = []
 
     for dataset_root in dataset_root_list:
@@ -57,7 +69,10 @@ def get_all_images(dataset_root_list):
             for dir in dirs:
                 image_paths += glob.glob(f"{root}/{dir}/*.*g")
 
-    return sorted(image_paths)
+    if sorting:
+        return sorted(image_paths)
+    else:
+        return image_paths
 
 def requires_grad(model, flag=True):
     for p in model.parameters():
@@ -74,26 +89,6 @@ def weight_init(m):
     if isinstance(m, nn.ConvTranspose2d):
         nn.init.xavier_normal_(m.weight.data)
 
-
-# def update_net(model, optimizer, loss, use_mGPU=False):
-#     optimizer.zero_grad()  
-#     loss.backward()   
-#     if use_mGPU:
-#         size = float(torch.distributed.get_world_size())
-#         for param in model.parameters():
-#             if param.grad == None:
-#                 continue            
-#             torch.distributed.all_reduce(param.grad.data, op=torch.distributed.ReduceOp.SUM)
-#             param.grad.data /= size
-#     optimizer.step()  
-
-# def setup_ddp(gpu, ngpus_per_node, PORT):
-#     torch.distributed.init_process_group(
-#             backend='nccl',
-#             init_method=f'tcp://127.0.0.1:{PORT}',
-#             world_size=ngpus_per_node,
-#             rank=gpu)
-
 def make_grid_image(images_list):
     grid_rows = []
 
@@ -104,7 +99,7 @@ def make_grid_image(images_list):
 
     grid = torch.cat(grid_rows, dim=1)
     grid = grid.detach().cpu().numpy().transpose([1,2,0]) * 255
-    return Image.fromarray(grid.astype(np.uint8))
+    return grid
 
     
 def stack_image_grid(batch_data_items : list, target_image : list):

@@ -15,7 +15,6 @@
     LOSS: {
         W_ADV: 1,
         W_VGG: 0,
-        W_ID: 0,
         W_L1: 0,
         W_RECON: 0,
         W_CYCLE: 0,
@@ -55,7 +54,7 @@
         TRAIN_PATH:{
             IMAGE:
                 [
-                    '/media/deep3090/hdd/DATASET/FACE_DATASET/ffhq70k',
+                    '/data1/PUBLIC/ffhq70k/',
                 ],
         },
 
@@ -66,8 +65,4 @@
                 ]
         }
     },
-
-
-
-
 }

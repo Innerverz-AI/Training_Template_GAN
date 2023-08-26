@@ -8,6 +8,7 @@ import numpy as np
 # from packages import Ranger
 from tqdm import tqdm
 import glob
+import cv2
 
 class ModelInterface(metaclass=abc.ABCMeta):
     """
@@ -245,4 +246,16 @@ class ModelInterface(metaclass=abc.ABCMeta):
         self.valid_images = torch.cat(self.valid_images, dim=-1)
 
         self.set_networks_train_mode()
+    
+    def save_grid_image(self, phase='train'):
         
+        images = self.train_images if phase=='train' else self.valid_images
+        gird = utils.make_grid_image(images)
+        cv2.imwrite(
+            f"{self.CONFIG['BASE']['SAVE_ROOT_IMGS']}/{str(self.CONFIG['BASE']['GLOBAL_STEP']).zfill(8)}_{phase}.png",
+            gird,
+        )
+        cv2.imwrite(
+            f"{self.CONFIG['BASE']['SAVE_ROOT_IMGS']}/_latest_{phase}_result.png",
+            gird,
+        )

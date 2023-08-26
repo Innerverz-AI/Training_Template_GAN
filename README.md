@@ -72,6 +72,12 @@ accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process
 [x] use lpips library    
 [x] rename 'MyModel' to 'core'    
 
+### 23.08.26  
+[x] change conditional statements: 'W_VGG' in self.CONFIG['LOSS'] --> if self.CONFIG['LOSS']['W_VGG'] 
+[x] change image saving funtion: from PIL.Image.save to cv2.imwrite
+[x] change quotes: ["BASE"]["GLOBAL_STEP"] --> ['BASE']['GLOBAL_STEP'] 
+[x] change quotes: f'{var1}/{var2}' --> f"{var1}/{var2}"
+ 
 ## Request   
 []  
   

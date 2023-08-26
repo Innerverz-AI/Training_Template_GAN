@@ -3,9 +3,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pg_modules.blocks import DownBlock, DownBlockPatch, conv2d
-from pg_modules.projector import F_RandomProj
-from pg_modules.diffaug import DiffAugment
+from .blocks import DownBlock, DownBlockPatch, conv2d
+from .projector import F_RandomProj
+from .diffaug import DiffAugment
 
 
 class SingleDisc(nn.Module):
