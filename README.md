@@ -19,10 +19,12 @@ Do you wish to use FP16 or BF16 (mixed precision)? ➔ Enter
 accelerate config
 
 # run
-accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process_port=3456 scripts/train.py
+accelerate launch scripts/train.py # single or multi GPU
+accelerate launch --multi_gpu --num_processes 4 --gpu_ids=0,1,2,3 --main_process_port=3456 scripts/train.py # multi GPU
 ```
 
 ### before training
+- set accelerate configs
 - modify the run_id in the configs.jsonnet file.
 - configure the saving_data_names in the core.model.__init__.
 
