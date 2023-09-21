@@ -1,4 +1,4 @@
-# INVZ Code Template
+# INVZ Code Template - training template for GANs
 
 ## Usage
 
